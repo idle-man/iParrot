@@ -1,0 +1,2 @@
+requests >= 2.18.0
+PyYAML >= 5.0.0
