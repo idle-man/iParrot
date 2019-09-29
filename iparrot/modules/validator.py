@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from parrot.modules.helper import *
-from parrot.modules.logger import logger, set_logger
-from parrot.extension.helper import *
+from iparrot.modules.helper import *
+from iparrot.modules.logger import logger, set_logger
+from iparrot.extension.helper import *
 
 
 class Validator(object):

@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-from parrot import __name__, __version__, __author__
+from iparrot import __name__, __version__, __author__
 
 with open('README.md', 'r') as fh:
     LONG_DESCRIPTION = fh.read()
@@ -29,8 +29,8 @@ setup(
     install_requires=['requests', 'PyYAML'],
     entry_points={
         'console_scripts': [
-            'parrot=parrot.parrot:main',
-            'iparrot=parrot.parrot:main'
+            'parrot=iparrot.parrot:main',
+            'iparrot=iparrot.parrot:main'
         ],
     },
     classifiers=(

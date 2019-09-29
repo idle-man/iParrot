@@ -5,7 +5,7 @@ import html
 import json
 import time
 
-from parrot import __version__, __description__
+from iparrot import __version__, __description__
 
 
 # ----------------------------------------------------------------------

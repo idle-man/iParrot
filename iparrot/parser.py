@@ -7,8 +7,8 @@ import yaml
 
 from yaml.scanner import ScannerError
 
-from parrot.modules.helper import *
-from parrot.modules.logger import logger, set_logger
+from iparrot.modules.helper import *
+from iparrot.modules.logger import logger, set_logger
 
 # refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 PUBLIC_HEADERS = [

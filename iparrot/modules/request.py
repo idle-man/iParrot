@@ -5,7 +5,7 @@ import requests
 from http.cookiejar import CookieJar
 from urllib.parse import urlencode
 
-from parrot.modules.helper import now_timestamp_ms
+from iparrot.modules.helper import now_timestamp_ms
 
 DEFAULT_TIMEOUT = 5
 

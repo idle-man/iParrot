@@ -3,7 +3,7 @@
 import sys
 from argparse import ArgumentParser
 
-from parrot import __version__, __description__
+from iparrot import __version__, __description__
 
 
 usage = """{}
@@ -106,8 +106,8 @@ def main_help():
 
 
 def main_record():
-    from parrot.parser import CaseParser
-    from parrot.modules.logger import logger, set_logger
+    from iparrot.parser import CaseParser
+    from iparrot.modules.logger import logger, set_logger
 
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--source', dest="source", action="store", default=None,
@@ -154,8 +154,8 @@ def main_record():
 
 
 def main_replay():
-    from parrot.player import Player
-    from parrot.modules.logger import logger, set_logger
+    from iparrot.player import Player
+    from iparrot.modules.logger import logger, set_logger
 
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--suite', '-c', '-C', '--case', dest="suite_or_case", action="store", default=None,

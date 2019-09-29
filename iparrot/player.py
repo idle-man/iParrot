@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from parrot.modules.helper import *
-from parrot.modules.request import HttpRequest
-from parrot.modules.validator import Validator
-from parrot.modules.logger import logger, set_logger
-from parrot.modules.reportor import Report
-from parrot.extension.helper import *
-from parrot.parser import CaseParser
+from iparrot.modules.helper import *
+from iparrot.modules.request import HttpRequest
+from iparrot.modules.validator import Validator
+from iparrot.modules.logger import logger, set_logger
+from iparrot.modules.reportor import Report
+from iparrot.extension.helper import *
+from iparrot.parser import CaseParser
 
 
 MINOR_INTERVAL_MS = 10

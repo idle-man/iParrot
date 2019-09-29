@@ -3,7 +3,7 @@
 import logging
 from logging import handlers
 
-from parrot.modules.helper import make_dir
+from iparrot.modules.helper import make_dir
 
 logger = logging.getLogger()
 
