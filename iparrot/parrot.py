@@ -57,7 +57,7 @@ Arguments:
   -env, --environment ENVIRONMENT
                         environment tag, defined in project/environments/*.yml
   -reset, --reset-after-case
-                        exclude filter on url, separated by ',' if multiple
+                        reset runtime environment or not, 'NO' as default
 
   --fail-stop FAIL_STOP stop or not when a test step failed on validation, False as default
   --fail-retry-times FAIL_RETRY_TIMES
@@ -166,8 +166,8 @@ def main_replay():
                      help="interval time(ms) between each step, use the recorded interval as default")
     opt.add_argument('-env', '--environment', dest="environment", action="store", default=None,
                      help="environment tag, defined in project/environments/*.yml")
-    opt.add_argument('-reset', '--reset-after-case', dest="reset_after_case", action="store_true", default=True,
-                     help="exclude filter on url, separated by ',' if multiple")
+    opt.add_argument('-reset', '--reset-after-case', dest="reset_after_case", action="store_true", default=False,
+                     help="reset runtime environment or not, 'NO' as default")
 
     opt.add_argument('--fail-stop', dest="fail_stop", action="store_true", default=False,
                      help="stop or not when a test step failed on validation, False as default")
@@ -200,7 +200,7 @@ def main_replay():
         suite_or_case=args.suite_or_case,
         environment=args.environment,
         interval=args.interval,
-        reset_after_case=args.reset_after_case,
+        reset_after_case=True if args.reset_after_case else False,
         fail_stop=args.fail_stop,
         retry_times=args.fail_retry_times,
         retry_interval=args.fail_retry_interval,

@@ -28,7 +28,7 @@ Look at the process of traffic playback:
 The iParrot project has been submitted to PyPI, installation way:
 
 1. Run `pip install iParrot` command.
-2. Or download the source code pkg, and run `python setup.py` command.
+2. Or download the source code pkg, and run `python setup.py install` command.
 
 After installation, the `parrot` executable is generated, you could try `parrot help`.
 
@@ -40,7 +40,7 @@ Among them, the two core commands are: **record**，**replay**
 ```
 $ parrot help
 Automated test solution for http requests based on recording and playback
-Version: 1.0.0
+Version: 1.0.2
 
 Usage: parrot [-h] [-v] [command] [<args>]
 
@@ -62,7 +62,7 @@ The purpose of this step is to parse the user-specified source file (currently .
 ```
 $ parrot help record
 Automated test solution for http requests based on recording and playback
-Version: 1.0.1
+Version: 1.0.2
 
 Usage: parrot record [<args>]
 
@@ -90,7 +90,7 @@ This step is to execute the specified set of test cases and generate a test repo
 ```
 $ parrot help replay
 Automated test solution for http requests based on recording and playback
-Version: 1.0.1
+Version: 1.0.2
 
 Usage: parrot replay [<args>]
 
@@ -103,7 +103,7 @@ Arguments:
   -env, --environment ENVIRONMENT
                         environment tag, defined in project/environments/*.yml
   -reset, --reset-after-case
-                        exclude filter on url, separated by ',' if multiple
+                        reset runtime environment or not, 'NO' as default
 
   --fail-stop FAIL_STOP stop or not when a test step failed on validation, False as default
   --fail-retry-times FAIL_RETRY_TIMES
@@ -148,7 +148,9 @@ HAR is a common standardized format for storing HTTP requests and responses
 - Its standardization: JSON format and UTF-8 coding
 
 Based on the capture source file, you can automatically parse and generate test cases that meet certain formats. The formats can be aligned to the following Mode Two.
-	
+
+If not all the requests in the HAR file need to be recorded, use the `--include` and `--exclude` parameters in the `parrot record` command, which will perform fuzzy matching on the url to complete the filtering.
+
 > In daily project testing and regression, people all have the opportunity to "save" the capture record, which includes complete and real user scenarios and interface call scenes, better than manual "draw up" use cases. 
 > 
 > The files processed by Parrot in the first phase are Charles trace and Fiddler txt. The format is quite different, and the parsing of plain text is cumbersome.
@@ -270,7 +272,7 @@ The important information we can use:
 - Timing: The time-consuming of the request, which is not needed to strongly verify, but can be used to make certain comparisons
 ```
 
-During the recording phase of Parrot, the default response information is extracted from the recorded samples as the expected result (supporting the filtering of `--include``--exclude`). 
+During the recording phase of Parrot, the default response information is extracted from the recorded samples as the expected result (supporting the filtering of `--validation-include``--validation-exclude`). 
 
 For the format, see the definition of Mode Two below.
 
@@ -362,7 +364,9 @@ If the playback parameter `interval` is specified, it will be executed according
 
 Take the query request as an example. The requirement of the interface is to query the data of tomorrow. The recorded parameters are kept with static values. If the script is runned in the next day, it will not meet the requirements. In this case, the parameter needs to be generated in real time.
 
-The Parrot solution is: use `${{function(params)}}` to generate real time value, where `function` is provided by  iparrot.modules.helper or self-defined iparrot.extension.helper.
+The Parrot solution is: use `${{function(params)}}` to generate real time value
+- where `function` is provided by  iparrot.modules.helper or self-defined iparrot.extension.helper.
+- If the user uses the `parrot` command independently, try a separate `import` in the setup configuration of the previous suite/case/step.
 
 Example:
 

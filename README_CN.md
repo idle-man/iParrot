@@ -28,7 +28,7 @@
 iParrot项目已提交到PyPI，安装方式：
 
 1. 可使用`pip install iParrot`命令进行安装
-2. 也可下载源码包，使用`python setup.py`进行安装
+2. 也可下载源码包，使用`python setup.py install`进行安装
 
 安装完成后，会生成`parrot`可执行文件，可尝试`parrot help`
 
@@ -40,7 +40,7 @@ iParrot项目已提交到PyPI，安装方式：
 ```
 $ parrot help
 Automated test solution for http requests based on recording and playback
-Version: 1.0.0
+Version: 1.0.2
 
 Usage: parrot [-h] [-v] [command] [<args>]
 
@@ -62,7 +62,7 @@ optional arguments:
 ```
 $ parrot help record
 Automated test solution for http requests based on recording and playback
-Version: 1.0.1
+Version: 1.0.2
 
 Usage: parrot record [<args>]
 
@@ -90,7 +90,7 @@ Arguments:
 ```
 $ parrot help replay
 Automated test solution for http requests based on recording and playback
-Version: 1.0.1
+Version: 1.0.2
 
 Usage: parrot replay [<args>]
 
@@ -103,7 +103,7 @@ Arguments:
   -env, --environment ENVIRONMENT
                         environment tag, defined in project/environments/*.yml
   -reset, --reset-after-case
-                        exclude filter on url, separated by ',' if multiple
+                        reset runtime environment or not, 'NO' as default
 
   --fail-stop FAIL_STOP stop or not when a test step failed on validation, False as default
   --fail-retry-times FAIL_RETRY_TIMES
@@ -148,10 +148,13 @@ HAR为储存HTTP请求和响应的通用标准化格式
 - 其标准化体现在：JSON格式和UTF-8统一编码
 
 基于抓包源文件，可以自动解析生成符合一定规则的测试用例，规则可以对齐到下面的模式二
+
+如果不是HAR文件中的所有请求都需要录制进来，可在`parrot record`命令中使用`--include`和`--exclude`参数，其会对url进行模糊匹配来完成过滤
 	
 > 大家日常进行项目测试及回归，均有机会"顺手"留存抓包记录，其中包含**完整**且**真实**的用户场景及接口调用现场，胜过手工“编造”用例
 > 
 > Parrot一期处理的文件为Charles trace和Fiddler txt，格式上差异较大，且纯文本的解析较为繁琐
+
 
 #### 模式二：按照统一规格进行自定义
 
@@ -269,7 +272,7 @@ project/
 - Timing：接口响应的耗时，不做强预期，可以用来做一定的对照
 ```
 
-Parrot的录制阶段，默认从录制样本中提取全部的响应信息作为预期结果（支持`--include``--exclude`的传参筛选），格式参见下面模式二的定义
+Parrot的录制阶段，默认从录制样本中提取全部的响应信息作为预期结果（支持`--validation-include``--validation-exclude`的传参筛选），格式参见下面模式二的定义
 
 #### 模式二：按照统一规格进行自定义
 
@@ -357,7 +360,10 @@ test_suite2
 
 以查询类接口为例，接口的需求是查询明天的数据，录制所记录下来的传参是静态值，改天运行的话就不符合需求了，此时就需要实时生成该参数
 
-Parrot支持的方式为:`${{function(params)}}`，其中的`function`，在iparrot.modules.helper中提供了很多常用的方法，可直接使用；同时，用户也可以在iparrot.extension.helper中补充自己的方法
+Parrot支持的方式为:`${{function(params)}}`
+- 其中的`function`，在iparrot.modules.helper中提供了很多常用的方法，可直接使用
+- 如果用户是基于源码使用的话，用户可以在iparrot.extension.helper中补充自己的方法
+- 如果用户独立使用`parrot`命令的话，可以尝试在前置的suite/case/step的setup配置中进行单独的`import`
 
 示例:
 

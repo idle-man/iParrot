@@ -52,13 +52,13 @@ class Player(object):
             self.session.close()
         self.session = HttpRequest()
 
-    def run_cases(self, suite_or_case, environment=None, interval='ms', reset_after_case=True,
+    def run_cases(self, suite_or_case, environment=None, interval='ms', reset_after_case=False,
                   fail_stop=False, retry_times=0, retry_interval=100, output='.'):
         """
         :param suite_or_case: file or directory of test suites / cases / steps
         :param environment: environment flag defined in test data, 'None' - only load 'global' data
         :param interval: interval time(ms) between each step, use the recorded interval as default
-        :param reset_after_case: reset runtime environment after each case or not, 'yes' as default
+        :param reset_after_case: reset runtime environment after each case or not, 'no' as default
         :param fail_stop: stop or not when a test step failed on validation, False as default
         :param retry_times: max retry times when a test step failed on validation, 0 as default
         :param retry_interval: retry interval(ms) when a test step failed on validation, 100 as default
