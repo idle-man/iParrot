@@ -2,6 +2,6 @@
 
 __name__ = 'iParrot'
 __author__ = 'idle-man'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __description__ = 'Automated test solution for http requests based on recording and playback'
 
