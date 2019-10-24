@@ -51,7 +51,7 @@ Usage: parrot replay [<args>]
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
                         test suite or case with path, *.yml or folder [required]
-  -o, --output OUTPUT   output path for report and log, 'ParrotProject' as default
+  -t, --target TARGET   output path for report and log, 'ParrotProject' as default
   -i, --interval INTERVAL
                         interval time(ms) between each step, use the recorded interval as default
   -env, --environment ENVIRONMENT
@@ -160,7 +160,7 @@ def main_replay():
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--suite', '-c', '-C', '--case', dest="suite_or_case", action="store", default=None,
                      help="test suite or case with path, *.yml or folder")
-    opt.add_argument('-o', '-O', '--output', dest="output", action="store", default='ParrotProject',
+    opt.add_argument('-t', '-T', '--target', dest="target", action="store", default='ParrotProject',
                      help="output path for report and log, 'ParrotProject' as default")
     opt.add_argument('-i', '-I', '--interval', dest="interval", action="store", default='ms',
                      help="interval time(ms) between each step, use the recorded interval as default")
@@ -192,7 +192,7 @@ def main_replay():
     set_logger(
         mode=args.log_mode,
         level=args.log_level,
-        path=args.log_path if args.log_path else args.output,
+        path=args.log_path if args.log_path else args.target,
         name=args.log_name
     )
     player = Player()
@@ -204,7 +204,7 @@ def main_replay():
         fail_stop=args.fail_stop,
         retry_times=args.fail_retry_times,
         retry_interval=args.fail_retry_interval,
-        output=args.output
+        output=args.target
     )
 
 

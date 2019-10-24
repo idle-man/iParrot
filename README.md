@@ -89,7 +89,7 @@ Usage: parrot replay [<args>]
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
                         test suite or case with path, *.yml or folder [required]
-  -o, --output OUTPUT   output path for report and log, 'ParrotProject' as default
+  -t, --target TARGET   output path for report and log, 'ParrotProject' as default
   -i, --interval INTERVAL
                         interval time(ms) between each step, use the recorded interval as default
   -env, --environment ENVIRONMENT

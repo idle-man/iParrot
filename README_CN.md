@@ -89,7 +89,7 @@ Usage: parrot replay [<args>]
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
                         测试用例/用例集, 可附带路径, *.yml 或 folder [必传]
-  -o, --output OUTPUT   报告和日志的输出路径, 默认为'ParrotProject'
+  -t, --target TARGET   报告和日志的输出路径, 默认为'ParrotProject'
   -i, --interval INTERVAL
                         请求的间隔时长（毫秒）, 默认使用录制所得的间隔
   -env, --environment ENVIRONMENT
