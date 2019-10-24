@@ -451,17 +451,24 @@ class CaseParser(object):
                 _data = _req.get('postData').get('params')
             else:
                 _data = _req.get('postData').get('text')
+            # if 'mimeType' in _req.get('postData') and _req.get('postData').get('mimeType') == 'application/json':
+            #     _tmp = json.loads(_data)
+            #     _data = []
+            #     for _tk, _tv in _tmp.items():
+            #         _data.append({'name': _tk, 'value': _tv})
         logger.debug(" - params: {}".format(_param))
         logger.debug(" - data: {}".format(_data))
 
-        for _item in _param:
-            # extract all parameter values into variables, and keep {value} in parameters
-            # TODO：if the value is json, need to convert it to a.b[1].c format, but how to keep in parameters?
-            step_dict['config']['variables'][_item['name']] = _item['value']
-            step_dict['request']['params'][_item['name']] = '${'+"{}".format(_item['name'])+'}'
-        for _item in _data:
-            step_dict['config']['variables'][_item['name']] = _item['value']
-            step_dict['request']['data'][_item['name']] = '${' + "{}".format(_item['name']) + '}'
+        if isinstance(_param, (list, tuple, set)):
+            for _item in _param:
+                # extract all parameter values into variables, and keep {value} in parameters
+                # TODO：if the value is json, need to convert it to a.b[1].c format, but how to keep in parameters?
+                step_dict['config']['variables'][_item['name']] = _item['value']
+                step_dict['request']['params'][_item['name']] = '${'+"{}".format(_item['name'])+'}'
+        if isinstance(_data, (list, tuple, set)):
+            for _item in _data:
+                step_dict['config']['variables'][_item['name']] = _item['value']
+                step_dict['request']['data'][_item['name']] = '${' + "{}".format(_item['name']) + '}'
 
         # get headers
         step_dict['request']['headers'] = {}
