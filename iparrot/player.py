@@ -421,7 +421,7 @@ class Player(object):
 
     def generate_report(self, output):
         report_file = "{}/parrot_{}.html".format(output, now_timestamp())
-        Report(stream=open(report_file, 'w')).generate_report(result=self.report)
+        Report(stream=open(report_file, 'w', encoding='utf-8')).generate_report(result=self.report)
         logger.info("You could check the report: {}".format(report_file))
 
 
