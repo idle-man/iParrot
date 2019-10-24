@@ -345,7 +345,11 @@ class CaseParser(object):
     def __read_file(name):
         try:
             with open(file=name, mode="r", encoding='utf-8') as f:
-                return f.read()
+                content = f.read()
+                # solve problem caused by BOM head
+                if content.startswith(u'\ufeff'):
+                    content = content.encode('utf-8')[3:].decode('utf-8')
+                return content
         except IOError:
             logger.error("Failed to open file: {}".format(name))
             sys.exit(-1)
