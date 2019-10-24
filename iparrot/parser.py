@@ -344,7 +344,7 @@ class CaseParser(object):
     @staticmethod
     def __read_file(name):
         try:
-            with open(file=name, mode="r") as f:
+            with open(file=name, mode="r", encoding='utf-8') as f:
                 return f.read()
         except IOError:
             logger.error("Failed to open file: {}".format(name))
@@ -358,7 +358,7 @@ class CaseParser(object):
         _d_yaml = "{}/{}_env.yml".format(_d_path, suite['config']['name'])
         r_d_yaml = "../environments/{}_env.yml".format(suite['config']['name'])
         make_dir(_d_path)
-        with open(file=_d_yaml, mode='w') as f:
+        with open(file=_d_yaml, mode='w', encoding='utf-8') as f:
             yaml.dump(data=self.env_tpl, stream=f, encoding='utf-8', allow_unicode=True)
         logger.debug(" - environments: {}".format(_d_yaml))
 
@@ -379,7 +379,7 @@ class CaseParser(object):
                     _step['config']['name'].split('/')[-1])
                 _step['config']['import'] = r_d_yaml
                 make_dir(_s_path)
-                with open(file=_s_yaml, mode='w') as f:
+                with open(file=_s_yaml, mode='w', encoding='utf-8') as f:
                     # use allow_unicode=True to solve Chinese display problem
                     yaml.dump(data=_step, stream=f, encoding='utf-8', allow_unicode=True)
                 _case['test_steps'][_sid] = r_s_yaml
@@ -391,13 +391,13 @@ class CaseParser(object):
             r_c_yaml = "../test_cases/{}.yml".format(suite['config']['name'])
             _case['config']['import'] = r_d_yaml
             make_dir(_c_path)
-            with open(file=_c_yaml, mode='w') as f:
+            with open(file=_c_yaml, mode='w', encoding='utf-8') as f:
                 yaml.dump(data=_case, stream=f, encoding='utf-8', allow_unicode=True)
             logger.debug(" - test case: {}".format(_c_yaml))
             suite['test_cases'][_cid] = r_c_yaml
 
         # generate test suite
-        with open(file=_e_yaml, mode='w') as f:
+        with open(file=_e_yaml, mode='w', encoding='utf-8') as f:
             yaml.dump(data=suite, stream=f, encoding='utf-8', allow_unicode=True)
         logger.debug(" - test suite: {}".format(_e_yaml))
         logger.info("Done. You could get them in {}".format(target))
