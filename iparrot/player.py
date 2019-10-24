@@ -420,6 +420,7 @@ class Player(object):
                     continue
 
     def generate_report(self, output):
+        make_dir(output)
         report_file = "{}/parrot_{}.html".format(output, now_timestamp())
         Report(stream=open(report_file, 'w', encoding='utf-8')).generate_report(result=self.report)
         logger.info("You could check the report: {}".format(report_file))
