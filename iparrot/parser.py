@@ -469,10 +469,14 @@ class CaseParser(object):
                 # TODO：if the value is json, need to convert it to a.b[1].c format, but how to keep in parameters?
                 step_dict['config']['variables'][_item['name']] = _item['value']
                 step_dict['request']['params'][_item['name']] = '${'+"{}".format(_item['name'])+'}'
+        else:
+            step_dict['request']['params'] = _param
         if isinstance(_data, (list, tuple, set)):
             for _item in _data:
                 step_dict['config']['variables'][_item['name']] = _item['value']
                 step_dict['request']['data'][_item['name']] = '${' + "{}".format(_item['name']) + '}'
+        else:
+            step_dict['request']['data'] = _data
 
         # get headers
         step_dict['request']['headers'] = {}
