@@ -306,32 +306,50 @@ class Player(object):
         :return: string or dict with precise values
         """
         if isinstance(source, str):
-            _rs = re.compile(r"(\${([^{}]+)})")  # to match ${VariableA}
-            _rf = re.compile(r"(\${{([^{}]+)}})")  # to match ${{Function(A)}}
-
-            while re.search(_rs, source):
-                for _pair in re.findall(_rs, source):
-                    _pair = list(_pair)
-                    if _pair[1] in self.variables:
-                        _pair[1] = self.variables[_pair[1]]
-                    else:
-                        logger.warning("Undefined variable: {}, set to ''".format(_pair[1]))
-                        _pair[1] = ''
-                    source = source.replace(_pair[0], str(_pair[1]))
-            while re.search(_rf, source):
-                for _pair in re.findall(_rf, source):
-                    _pair = list(_pair)
-                    try:
-                        _pair[1] = eval(_pair[1])
-                    except SyntaxError or Exception as e:
-                        logger.warning("Invalid function: {}: {}, set to ''".format(_pair[0], e))
-                        _pair[1] = ''
-                    source = source.replace(_pair[0], str(_pair[1]))
-            return source
+            if source.startswith('{') and source.endswith('}'):
+                try:
+                    _source = json.loads(source)
+                    _new = {}
+                    for _key, _val in _source.items():
+                        _new[self.__get_real_value(_key)] = self.__get_real_value(_val)
+                    return json.dumps(_new)
+                except json.JSONDecodeError:
+                    pass
+            return self.__get_real_value(source)
         elif isinstance(source, dict):
             for _key in source.keys():
                 source[_key] = self.__get_variables(source[_key])
         return source
+
+    def __get_real_value(self, variable):
+        _rs = re.compile(r"(\${([^{}]+)})")  # to match ${VariableA}
+        _rf = re.compile(r"(\${{([^{}]+)}})")  # to match ${{Function(A)}}
+
+        while re.search(_rs, format(variable)):
+            for _pair in re.findall(_rs, format(variable)):
+                _pair = list(_pair)
+                if _pair[1] in self.variables:
+                    _pair[1] = self.variables[_pair[1]]
+                else:
+                    logger.warning("Undefined variable: {}, set to ''".format(_pair[1]))
+                    _pair[1] = ''
+                if variable == _pair[0]:
+                    variable = _pair[1]
+                    break
+                variable = variable.replace(_pair[0], str(_pair[1]))
+        while re.search(_rf, format(variable)):
+            for _pair in re.findall(_rf, format(variable)):
+                _pair = list(_pair)
+                try:
+                    _pair[1] = eval(_pair[1])
+                except SyntaxError or Exception as e:
+                    logger.warning("Invalid function: {}: {}, set to ''".format(_pair[0], e))
+                    _pair[1] = ''
+                if variable == _pair[0]:
+                    variable = _pair[1]
+                    break
+                variable = variable.replace(_pair[0], str(_pair[1]))
+        return variable
 
     def do_validation(self, response, rules):
         logger.info(" - Do response validations: {}".format(rules))
@@ -420,8 +438,8 @@ class Player(object):
                     continue
 
     def generate_report(self, output):
-        make_dir(output)
         report_file = "{}/parrot_{}.html".format(output, now_timestamp())
+        make_dir(output)
         Report(stream=open(report_file, 'w', encoding='utf-8')).generate_report(result=self.report)
         logger.info("You could check the report: {}".format(report_file))
 

@@ -115,6 +115,9 @@ VALIDATE_HEADERS = [
     'content-type'
 ]
 
+# Length condition set to prevent accidental injury
+IDENTIFY_LEN = 6
+
 
 class CaseParser(object):
 
@@ -164,6 +167,9 @@ class CaseParser(object):
             'teardown_hooks': []
         }
         self.environment = None
+
+        # to store temporary variables for automatic identification of interface dependencies
+        self.variables = {}
 
     # read and parse test cases into dict for replay
     def load_test_case(self, suite_or_case, environment=None):
@@ -268,7 +274,8 @@ class CaseParser(object):
 
     # parse source file and generate test cases
     def source_to_case(self, source, target="ParrotProject",
-                       include=None, exclude=None, validate_include=None, validate_exclude=None):
+                       include=None, exclude=None, validate_include=None, validate_exclude=None,
+                       auto_extract=False):
         """
         :param source: source file
         :param target: target directory for case output
@@ -276,6 +283,7 @@ class CaseParser(object):
         :param exclude: list, matched url would be ignored in recording
         :param validate_include: list, not matched response would be ignored in validating
         :param validate_exclude: list, matched response would be ignored in validating
+        :param auto_extract: bool, for automatic identification of interface dependencies
         :return suite dict
         """
         if not (source and os.path.exists(source)):
@@ -283,7 +291,7 @@ class CaseParser(object):
             sys.exit(-1)
 
         if source.lower().endswith('.har'):
-            return self.har_to_case(source, target, include, exclude, validate_include, validate_exclude)
+            return self.har_to_case(source, target, include, exclude, validate_include, validate_exclude, auto_extract)
         # elif source.lower().endswith('.trace'):
         #     self.charles_trace_to_case()
         # elif source.lower().endswith('.txt'):
@@ -294,7 +302,8 @@ class CaseParser(object):
 
     # parse har file and generate test cases
     def har_to_case(self, source, target="ParrotProject",
-                    include=None, exclude=None, validate_include=None, validate_exclude=None):
+                    include=None, exclude=None, validate_include=None, validate_exclude=None,
+                    auto_extract=False):
         """parse source har file and generate test cases
         :param source: source file
         :param target: target directory for case output
@@ -302,6 +311,7 @@ class CaseParser(object):
         :param exclude: list, matched url would be ignored in recording
         :param validate_include: list, not matched response would be ignored in validating
         :param validate_exclude: list, matched response would be ignored in validating
+        :param auto_extract: bool, for automatic identification of interface dependencies
         :return suite dict
         """
         if not (source and os.path.exists(source)):
@@ -325,11 +335,13 @@ class CaseParser(object):
             step_dict = copy.deepcopy(self.step_tpl)
             self.__har_times(entry=entry_dict, step_dict=step_dict)
             if not self.__har_request(entry=entry_dict, step_dict=step_dict,
-                                      include=include, exclude=exclude):
+                                      include=include, exclude=exclude, auto_extract=auto_extract):
                 continue
             if not self.__har_response(entry=entry_dict, step_dict=step_dict,
-                                       include=validate_include, exclude=validate_exclude):
+                                       include=validate_include, exclude=validate_exclude, auto_extract=auto_extract):
                 continue
+            logger.debug("test_step: {}".format(json.dumps(step_dict)))
+
             # add step into case
             case_dict['test_steps'].append(step_dict)
 
@@ -373,7 +385,17 @@ class CaseParser(object):
         for _cid, _case in enumerate(suite['test_cases']):
             # generate test steps
             for _sid, _step in enumerate(_case['test_steps']):
-                _step['response'] = {'extract': {}}  # remove 'response' for a clear view
+                # remove 'response' for a clear view
+                # _step['response'] = {'extract': {}}
+                _s_resp = copy.deepcopy(_step['response'])
+                for _k, _v in _s_resp.items():
+                    if _k == 'extract':
+                        for _ex_k, _ex_v in _s_resp['extract'].items():
+                            if _ex_k in self.variables.keys() and self.variables[_ex_k]['flag']:
+                                _step['response']['extract'][_ex_v] = _ex_v
+                            del _step['response']['extract'][_ex_k]
+                    else:
+                        del _step['response'][_k]
                 _s_id = "{}{}".format('0'*(4-len(str(_sid+1))), _sid+1)  # step id
                 _s_path = "{}/test_steps/{}".format(target, '/'.join(_step['config']['name'].split('/')[1:-1]))
                 _s_yaml = "{}/{}_{}.yml".format(_s_path, _s_id, _step['config']['name'].split('/')[-1])
@@ -407,7 +429,7 @@ class CaseParser(object):
         logger.info("Done. You could get them in {}".format(target))
 
     # parse request block and filter unneeded urls
-    def __har_request(self, entry, step_dict, include, exclude):
+    def __har_request(self, entry, step_dict, include, exclude, auto_extract=False):
         if not ('request' in entry.keys() and entry['request']):
             logger.warning(" * There is no request in this entry: {}".format(json.dumps(entry)))
             return False
@@ -463,35 +485,60 @@ class CaseParser(object):
         logger.debug(" - params: {}".format(_param))
         logger.debug(" - data: {}".format(_data))
 
+        # extract all parameter values into variables, and keep {value} in parameters
         if isinstance(_param, (list, tuple, set)):
             for _item in _param:
-                # extract all parameter values into variables, and keep {value} in parameters
-                # TODO：if the value is json, need to convert it to a.b[1].c format, but how to keep in parameters?
-                step_dict['config']['variables'][_item['name']] = _item['value']
-                step_dict['request']['params'][_item['name']] = '${'+"{}".format(_item['name'])+'}'
+                self.__har_extract(step_dict, _item['name'], _item['value'], 'params', auto_extract)
         else:
             step_dict['request']['params'] = _param
         if isinstance(_data, (list, tuple, set)):
             for _item in _data:
-                step_dict['config']['variables'][_item['name']] = _item['value']
-                step_dict['request']['data'][_item['name']] = '${' + "{}".format(_item['name']) + '}'
+                self.__har_extract(step_dict, _item['name'], _item['value'], 'data', auto_extract)
         else:
             step_dict['request']['data'] = _data
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
 
         # get headers
         step_dict['request']['headers'] = {}
-        self.__har_headers(_req.get('headers'), step_dict['request']['headers'], RECORD_HEADERS)
+        self.__har_headers(_req.get('headers'), step_dict['request']['headers'], RECORD_HEADERS, auto_extract)
         logger.debug(" - headers: {}".format(json.dumps(step_dict['request']['headers'])))
 
         # get cookies
         step_dict['request']['cookies'] = {}
-        self.__har_cookies(_req.get('cookies'), step_dict['request']['cookies'])
+        self.__har_cookies(_req.get('cookies'), step_dict['request']['cookies'], auto_extract)
         logger.debug(" - cookies: {}".format(json.dumps(step_dict['request']['cookies'])))
 
         return True
 
+    def __har_extract(self, step_dict, i_name, i_value, i_type, auto_extract=False):
+        _value = i_value
+        # if format(_value) == _value and _value.startswith('{') and _value.endswith('}'):
+        #     try:
+        #         _value = json.loads(_value)
+        #         if not isinstance(_value, dict):
+        #             _value = i_value
+        #     except json.decoder.JSONDecodeError:
+        #         pass
+
+        if isinstance(_value, dict):
+            for _k, _v in _value.items():
+                if auto_extract and format(_v) in self.variables.keys():
+                    step_dict['config']['variables']["{}.{}".format(i_name, _k)] = \
+                        '${' + self.variables[_v]['key'] + '}'
+                else:
+                    step_dict['config']['variables']["{}.{}".format(i_name, _k)] = _v
+                _value[_k] = '${' + "{}.{}".format(i_name, _k) + '}'
+            step_dict['request'][i_type][i_name] = json.dumps(_value)
+        else:
+            if auto_extract and format(_value) in self.variables.keys():
+                step_dict['config']['variables'][i_name] = '${' + self.variables[_value]['key'] + '}'
+                self.variables[_value]['flag'] = 1
+            else:
+                step_dict['config']['variables'][i_name] = _value
+            step_dict['request'][i_type][i_name] = '${' + "{}".format(i_name) + '}'
+
     # parse response block and make validations
-    def __har_response(self, entry, step_dict, include, exclude):
+    def __har_response(self, entry, step_dict, include, exclude, auto_extract=False):
         if not ('response' in entry.keys() and entry['response']):
             logger.warning(" * There is no response in this entry: {}".format(json.dumps(entry)))
             return False
@@ -507,8 +554,18 @@ class CaseParser(object):
         _vin = get_matched_keys(key=include, keys=list(step_dict['response']['headers'].keys()), fuzzy=1)
         _vex = get_matched_keys(key=exclude, keys=list(step_dict['response']['headers'].keys()), fuzzy=1) if exclude else []
         for _k, _v in step_dict['response']['headers'].items():
+            # Extracting temporary variables for automatic identification of interface dependencies
+            if auto_extract and _v == format(_v) and len(_v) >= IDENTIFY_LEN:
+                if _v not in self.variables.keys():
+                    self.variables[_v] = {
+                        'key': "headers.{}".format(_k),
+                        'flag': 0
+                    }
+                step_dict['response']['extract'][_v] = "headers.{}".format(_k)
             if _k in _vin and _k not in _vex:
                 step_dict['validations'].append({"eq": {"headers.{}".format(_k): _v}})
+
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
 
         # get cookies
         step_dict['response']['cookies'] = {}
@@ -541,8 +598,17 @@ class CaseParser(object):
                 _vin = get_matched_keys(key=include, keys=list(_pairs.keys()), fuzzy=1)
                 _vex = get_matched_keys(key=exclude, keys=list(_pairs.keys()), fuzzy=1) if exclude else []
                 for _k, _v in _pairs.items():
+                    # Extracting temporary variables for automatic identification of interface dependencies
+                    if auto_extract and _v == format(_v) and len(_v) >= IDENTIFY_LEN:
+                        if _v not in self.variables.keys():
+                            self.variables[_v] = {
+                                'key': _k,
+                                'flag': 0
+                            }
+                        step_dict['response']['extract'][_v] = _k
                     if _k in _vin and _k not in _vex:
                         step_dict['validations'].append({"eq": {_k: _v}})
+
             except json.decoder.JSONDecodeError:
                 logger.warning(" * Invalid response content in json: {}".format(_text))
                 # sys.exit(-1)
@@ -552,6 +618,7 @@ class CaseParser(object):
             logger.warning(" * Unsupported mimeType: {}".format(_mime))
             # step_dict['validations'].append({"eq": {'content': _text}})
         logger.debug(" - validations: {}".format(json.dumps(step_dict['validations'])))
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
 
         return True
 
@@ -580,17 +647,23 @@ class CaseParser(object):
         step_dict['request']['time.start'] = har_time2timestamp(har_time=s_time, ms=1)
         step_dict['response']['time.spent'] = i_time
 
-    @staticmethod
-    def __har_headers(headers, the_dict, the_needed):
+    def __har_headers(self, headers, the_dict, the_needed, auto_extract=False):
         for _item in headers:
             if _item['name'].lower() in the_needed or _item['name'].lower() not in PUBLIC_HEADERS:
-                the_dict[_item['name']] = _item['value']
+                if auto_extract and format(_item['value']) in self.variables.keys():
+                    self.variables[_item['value']]['flag'] = 1
+                    the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                else:
+                    the_dict[_item['name']] = _item['value']
 
-    @staticmethod
-    def __har_cookies(cookies, the_dict):
+    def __har_cookies(self, cookies, the_dict, auto_extract=False):
         # requests module only supports name and value, not expires / httpOnly / secure
         for _item in cookies:
-            the_dict[_item['name']] = _item['value']
+            if auto_extract and format(_item['value']) in self.variables.keys():
+                self.variables[_item['value']]['flag'] = 1
+                the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+            else:
+                the_dict[_item['name']] = _item['value']
 
     # check if the url matches include option
     @staticmethod
@@ -620,10 +693,11 @@ class CaseParser(object):
 if __name__ == '__main__':
     set_logger(mode=1, level='debug')
     cp = CaseParser()
-    case = cp.source_to_case(source='../demo/demo.har',
-                             target='../demo/',
+    case = cp.source_to_case(source='../demo/parrot-demo.har',
+                             target='../demo',
                              include=[], exclude=['.js', '.css'],
-                             validate_include=[], validate_exclude=['timestamp', 'tag'])
+                             validate_include=[], validate_exclude=['timestamp', 'tag', 'token'],
+                             auto_extract=False)
     print(json.dumps(case))
     case = cp.load_test_case(suite_or_case='../demo/test_suites', environment='production')
     print(json.dumps(case))
