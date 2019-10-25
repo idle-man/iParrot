@@ -112,7 +112,7 @@ def main_record():
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--source', dest="source", action="store", default=None,
                      help="source file with path, *.har")
-    opt.add_argument('-t', '-T', '--target', dest="target", action="store", default='ParrotProject',
+    opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProject',
                      help="target output path, 'ParrotProject' as default")
     opt.add_argument('-i', '-I', '--include', dest="include", action="store", default=None,
                      help="include filter on url, separated by ',' if multiple")
@@ -160,7 +160,7 @@ def main_replay():
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--suite', '-c', '-C', '--case', dest="suite_or_case", action="store", default=None,
                      help="test suite or case with path, *.yml or folder")
-    opt.add_argument('-t', '-T', '--target', dest="target", action="store", default='ParrotProject',
+    opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProject',
                      help="output path for report and log, 'ParrotProject' as default")
     opt.add_argument('-i', '-I', '--interval', dest="interval", action="store", default='ms',
                      help="interval time(ms) between each step, use the recorded interval as default")
