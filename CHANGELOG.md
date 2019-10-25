@@ -1,3 +1,12 @@
+What's new in iParrot 1.0.4?
+===========================
+Release Date: 2019-10-25
+
+Release Feature:
+* change replay -o, --output to -t, --target
+* solve some problems about file encoding and content structure
+* fix bugs
+
 What's new in iParrot 1.0.3?
 ===========================
 Release Date: 2019-10-24
