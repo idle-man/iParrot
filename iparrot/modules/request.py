@@ -36,7 +36,7 @@ class HttpRequest(object):
                 response = self.session.request(
                     url="{}?{}".format(url, urlencode(params)) if params else url,
                     method=method,
-                    data=data,
+                    data=data.encode('utf-8') if isinstance(data, str) else data,
                     headers=headers,
                     cookies=cookies,
                     timeout=timeout
@@ -45,7 +45,7 @@ class HttpRequest(object):
                 response = self.session.request(
                     url=url,
                     method=method,
-                    params=params,
+                    params=params.encode('utf-8') if isinstance(params, str) else params,
                     headers=headers,
                     cookies=cookies,
                     timeout=timeout)

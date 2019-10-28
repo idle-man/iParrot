@@ -499,7 +499,7 @@ class Report(ReportTemplate):
                         step_time_spent=_step['_report_']['time']['spent'],
                         step_detail_request=_request,
                         step_detail_response=_response,
-                        step_detail_validation=_validation
+                        step_detail_validation=_validation.replace("__break_line__", "\n")
                     ) + "\n"
                 _case_summary = self.CASE_SUMMARY_TPL % dict(
                     case_id=c_id,

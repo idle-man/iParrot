@@ -355,7 +355,12 @@ class Player(object):
         logger.info(" - Do response validations: {}".format(rules))
         if 'Content-Type' in response['headers'] and response['headers']['Content-Type'].startswith('application/json'):
             response['content'] = json.loads(response['content'])
-        response = get_all_kv_pairs(item=response, mode=0)
+        _response = get_all_kv_pairs(item=response, mode=0)
+        response = {}
+        for _k, _v in response.items():
+            if _v == format(_v):
+                _v = "__break_line__".join(_v.split("\n"))
+            response[_k] = _v
         result = {'status': True, 'detail': []}
         self.validator.set_response(response)
         for _rule in rules:
