@@ -207,11 +207,11 @@ class Validator(object):
             if isinstance(actual, (list, tuple, set, dict, int, float)):
                 expression = expression.replace('__FIRST__', "{}".format(actual))
             else:
-                expression = expression.replace('__FIRST__', "'{}'".format(actual))
+                expression = expression.replace('__FIRST__', "'{}'".format(format(actual).replace("\'", "\\\'")))
             if isinstance(expected, (list, tuple, set, dict, int, float)):
                 expression = expression.replace('__SECOND__', "{}".format(expected))
             else:
-                expression = expression.replace('__SECOND__', "'{}'".format(expected))
+                expression = expression.replace('__SECOND__', "'{}'".format(format(actual).replace("\'", "\\\'")))
         try:
             return eval(expression)
         except NameError or TypeError or SyntaxError or Exception as e:
@@ -224,10 +224,14 @@ class Validator(object):
         if isinstance(first, (list, tuple, set, dict, int, float)):
             expression = "{} {}".format(first, comparator)
         else:
+            if first == format(first):
+                first = first.replace("\'", "\\\'")
             expression = "'{}' {}".format(first, comparator)
         if isinstance(second, (list, tuple, set, dict, int, float)):
             expression = "{} {}".format(expression, second)
         else:
+            if second == format(second):
+                second = second.replace("\'", "\\\'")
             expression = "{} '{}'".format(expression, second)
         return eval(expression)
 
