@@ -60,7 +60,7 @@ $ parrot help record
 Usage: parrot record [<args>]
 
 Arguments:
-  -s, --source SOURCE   source file with path, *.har [required]
+  -s, --source SOURCE   source file with path, *.har or directory [required]
   -t, --target TARGET   target output path, 'ParrotProject' as default
   -i, --include INCLUDE include filter on url, separated by ',' if multiple
   -e, --exclude EXCLUDE exclude filter on url, separated by ',' if multiple
@@ -88,7 +88,7 @@ Usage: parrot replay [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
-                        test suite or case with path, *.yml or folder [required]
+                        test suite or case with path, *.yml or directory [required]
   -t, --target TARGET   output path for report and log, 'ParrotProject' as default
   -i, --interval INTERVAL
                         interval time(ms) between each step, use the recorded interval as default
