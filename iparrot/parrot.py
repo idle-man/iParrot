@@ -28,7 +28,7 @@ Version: {}
 Usage: parrot record [<args>]
 
 Arguments:
-  -s, --source SOURCE   source file with path, *.har [required]
+  -s, --source SOURCE   source file with path, *.har or directory[required]
   -t, --target TARGET   target output path, 'ParrotProject' as default
   -i, --include INCLUDE include filter on url, separated by ',' if multiple
   -e, --exclude EXCLUDE exclude filter on url, separated by ',' if multiple
@@ -50,7 +50,7 @@ Usage: parrot replay [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
-                        test suite or case with path, *.yml or folder [required]
+                        test suite or case with path, *.yml or directory [required]
   -t, --target TARGET   output path for report and log, 'ParrotProject' as default
   -i, --interval INTERVAL
                         interval time(ms) between each step, use the recorded interval as default
@@ -111,7 +111,7 @@ def main_record():
 
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--source', dest="source", action="store", default=None,
-                     help="source file with path, *.har")
+                     help="source file with path, *.har or directory")
     opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProject',
                      help="target output path, 'ParrotProject' as default")
     opt.add_argument('-i', '-I', '--include', dest="include", action="store", default=None,
@@ -159,7 +159,7 @@ def main_replay():
 
     opt = ArgumentParser(usage=usage)
     opt.add_argument('-s', '-S', '--suite', '-c', '-C', '--case', dest="suite_or_case", action="store", default=None,
-                     help="test suite or case with path, *.yml or folder")
+                     help="test suite or case with path, *.yml or directory")
     opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProject',
                      help="output path for report and log, 'ParrotProject' as default")
     opt.add_argument('-i', '-I', '--interval', dest="interval", action="store", default='ms',

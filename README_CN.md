@@ -60,7 +60,7 @@ $ parrot help record
 Usage: parrot record [<args>]
 
 Arguments:
-  -s, --source SOURCE   源文件, 可附带路径, *.har [必传]
+  -s, --source SOURCE   源文件, 可附带路径, *.har 或 目录 [必传]
   -t, --target TARGET   用例输出路径, 默认为'ParrotProject'
   -i, --include INCLUDE "包含"过滤器, 模糊匹配url, 若有多个'或'条件请用','分割
   -e, --exclude EXCLUDE "不包含"过滤器, 模糊匹配url, 若有多个'或'条件请用','分割
@@ -88,7 +88,7 @@ Usage: parrot replay [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
-                        测试用例/用例集, 可附带路径, *.yml 或 folder [必传]
+                        测试用例/用例集, 可附带路径, *.yml 或 目录 [必传]
   -t, --target TARGET   报告和日志的输出路径, 默认为'ParrotProject'
   -i, --interval INTERVAL
                         请求的间隔时长（毫秒）, 默认使用录制所得的间隔

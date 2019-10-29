@@ -277,7 +277,7 @@ class CaseParser(object):
                        include=None, exclude=None, validate_include=None, validate_exclude=None,
                        auto_extract=False):
         """
-        :param source: source file
+        :param source: source file or direcotry
         :param target: target directory for case output
         :param include: list, not matched url would be ignored in recording
         :param exclude: list, matched url would be ignored in recording
@@ -286,24 +286,49 @@ class CaseParser(object):
         :param auto_extract: bool, for automatic identification of interface dependencies
         :return suite dict
         """
+        source = format(source).strip()
         if not (source and os.path.exists(source)):
-            logger.error("Source file does not exist: {}".format(source))
+            logger.error("Source file or directory does not exist: {}".format(source))
             sys.exit(-1)
 
-        if source.lower().endswith('.har'):
-            return self.har_to_case(source, target, include, exclude, validate_include, validate_exclude, auto_extract)
-        # elif source.lower().endswith('.trace'):
-        #     self.charles_trace_to_case()
-        # elif source.lower().endswith('.txt'):
-        #     self.fiddler_txt_to_case()
+        if source.endswith("/") or source.endswith("\\"):
+            suite_name = get_file_name(get_file_path(source))
         else:
-            logger.error("Unsupported file extension: {}".format(source))
-            sys.exit(-1)
+            suite_name = get_file_name(source)
+
+        if os.path.isdir(source):
+            files = get_dir_files(source)
+        else:
+            files = [source, ]
+
+        suite_dict = copy.deepcopy(self.suite_tpl)
+        suite_dict['config']['name'] = suite_name
+
+        logger.info("Start to parse cases from source files: {}".format(source))
+
+        for _file in files:
+            if _file.lower().endswith('.har'):
+                one_case = self.har_to_case(_file, target, include, exclude, validate_include, validate_exclude,
+                                            auto_extract, suite_name)
+            # elif _file.lower().endswith('.trace'):
+            #     self.charles_trace_to_case()
+            # elif _file.lower().endswith('.txt'):
+            #     self.fiddler_txt_to_case()
+            else:
+                logger.warning("Unsupported file extension: {}, ignore".format(_file))
+                continue
+
+            # add case into suite
+            suite_dict['test_cases'].append(one_case)
+            logger.info("Parse finished.")
+
+        self.__generate_case(suite_dict, target)
+        return suite_dict
 
     # parse har file and generate test cases
     def har_to_case(self, source, target="ParrotProject",
                     include=None, exclude=None, validate_include=None, validate_exclude=None,
-                    auto_extract=False):
+                    auto_extract=False, suite_name=None):
         """parse source har file and generate test cases
         :param source: source file
         :param target: target directory for case output
@@ -312,14 +337,15 @@ class CaseParser(object):
         :param validate_include: list, not matched response would be ignored in validating
         :param validate_exclude: list, matched response would be ignored in validating
         :param auto_extract: bool, for automatic identification of interface dependencies
+        :param suite_name: specified suite, new a suite as default
         :return suite dict
         """
         if not (source and os.path.exists(source)):
             logger.error("Source file does not exist: {}".format(source))
-            sys.exit(-1)
+            return False
         if not source.lower().endswith('.har'):
             logger.error("The source is not a har file: {}".format(source))
-            sys.exit(-1)
+            return False
         logger.info("Start to parse source file: {}".format(source))
 
         content = self.__read_file(source)
@@ -327,10 +353,10 @@ class CaseParser(object):
             har_dict = json.loads(content)['log']['entries']
         except (TypeError or KeyError):
             logger.error("HAR file content error: {}".format(source))
-            sys.exit(-1)
+            return False
 
         case_dict = copy.deepcopy(self.case_tpl)
-        suite_dict = copy.deepcopy(self.suite_tpl)
+        case_dict['config']['name'] = get_file_name(file=source)
         for entry_dict in har_dict:
             step_dict = copy.deepcopy(self.step_tpl)
             self.__har_times(entry=entry_dict, step_dict=step_dict)
@@ -338,20 +364,24 @@ class CaseParser(object):
                                       include=include, exclude=exclude, auto_extract=auto_extract):
                 continue
             if not self.__har_response(entry=entry_dict, step_dict=step_dict,
-                                       include=validate_include, exclude=validate_exclude, auto_extract=auto_extract):
+                                       include=validate_include, exclude=validate_exclude,
+                                       auto_extract=auto_extract):
                 continue
             logger.debug("test_step: {}".format(json.dumps(step_dict)))
 
             # add step into case
             case_dict['test_steps'].append(step_dict)
+        if suite_name:
+            return case_dict
+        else:
+            suite_dict = copy.deepcopy(self.suite_tpl)
+            # add case into suite
+            suite_dict['test_cases'].append(case_dict)
+            suite_dict['config']['name'] = get_file_name(file=source)
+            logger.info("Parse finished.")
 
-        # add case into suite
-        suite_dict['test_cases'].append(case_dict)
-        suite_dict['config']['name'] = case_dict['config']['name'] = get_file_name(file=source)
-        logger.info("Parse finished.")
-
-        self.__generate_case(suite_dict, target)
-        return suite_dict
+            self.__generate_case(suite_dict, target)
+            return suite_dict
 
     @staticmethod
     def __read_file(name):
@@ -382,9 +412,11 @@ class CaseParser(object):
         _e_yaml = "{}/{}.yml".format(_e_path, suite['config']['name'])
         make_dir(_e_path)
         suite['config']['import'] = r_d_yaml
+        _t_sid = 0  # count total steps in a suite
         for _cid, _case in enumerate(suite['test_cases']):
             # generate test steps
             for _sid, _step in enumerate(_case['test_steps']):
+                _t_sid += 1
                 # remove 'response' for a clear view
                 # _step['response'] = {'extract': {}}
                 _s_resp = copy.deepcopy(_step['response'])
@@ -396,7 +428,7 @@ class CaseParser(object):
                             del _step['response']['extract'][_ex_k]
                     else:
                         del _step['response'][_k]
-                _s_id = "{}{}".format('0'*(4-len(str(_sid+1))), _sid+1)  # step id
+                _s_id = "{}{}".format('0'*(4-len(str(_t_sid))), _t_sid)  # step id
                 _s_path = "{}/test_steps/{}".format(target, '/'.join(_step['config']['name'].split('/')[1:-1]))
                 _s_yaml = "{}/{}_{}.yml".format(_s_path, _s_id, _step['config']['name'].split('/')[-1])
                 r_s_yaml = "../test_steps/{}/{}_{}.yml".format(
@@ -413,8 +445,8 @@ class CaseParser(object):
 
             # generate test cases
             _c_path = "{}/test_cases".format(target)
-            _c_yaml = "{}/{}.yml".format(_c_path, suite['config']['name'])
-            r_c_yaml = "../test_cases/{}.yml".format(suite['config']['name'])
+            _c_yaml = "{}/{}.yml".format(_c_path, _case['config']['name'])
+            r_c_yaml = "../test_cases/{}.yml".format(_case['config']['name'])
             _case['config']['import'] = r_d_yaml
             make_dir(_c_path)
             with open(file=_c_yaml, mode='w', encoding='utf-8') as f:
@@ -555,7 +587,7 @@ class CaseParser(object):
         _vex = get_matched_keys(key=exclude, keys=list(step_dict['response']['headers'].keys()), fuzzy=1) if exclude else []
         for _k, _v in step_dict['response']['headers'].items():
             # Extracting temporary variables for automatic identification of interface dependencies
-            if auto_extract and _v == format(_v) and len(_v) >= IDENTIFY_LEN:
+            if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                 if _v not in self.variables.keys():
                     self.variables[_v] = {
                         'key': "headers.{}".format(_k),
@@ -598,10 +630,10 @@ class CaseParser(object):
                 _vin = get_matched_keys(key=include, keys=list(_pairs.keys()), fuzzy=1)
                 _vex = get_matched_keys(key=exclude, keys=list(_pairs.keys()), fuzzy=1) if exclude else []
                 for _k, _v in _pairs.items():
-                    if _v == format(_v):
+                    if isinstance(_v, str):
                         _v = "__break_line__".join(_v.split("\n"))
                     # Extracting temporary variables for automatic identification of interface dependencies
-                    if auto_extract and _v == format(_v) and len(_v) >= IDENTIFY_LEN:
+                    if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                         if _v not in self.variables.keys():
                             self.variables[_v] = {
                                 'key': _k,

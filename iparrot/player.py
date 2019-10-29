@@ -357,8 +357,8 @@ class Player(object):
             response['content'] = json.loads(response['content'])
         _response = get_all_kv_pairs(item=response, mode=0)
         response = {}
-        for _k, _v in response.items():
-            if _v == format(_v):
+        for _k, _v in _response.items():
+            if isinstance(_v, str):
                 _v = "__break_line__".join(_v.split("\n"))
             response[_k] = _v
         result = {'status': True, 'detail': []}
