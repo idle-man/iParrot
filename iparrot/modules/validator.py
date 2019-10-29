@@ -224,13 +224,13 @@ class Validator(object):
         if isinstance(first, (list, tuple, set, dict, int, float)):
             expression = "{} {}".format(first, comparator)
         else:
-            if first == format(first):
+            if isinstance(first, str):
                 first = first.replace("\'", "\\\'")
             expression = "'{}' {}".format(first, comparator)
         if isinstance(second, (list, tuple, set, dict, int, float)):
             expression = "{} {}".format(expression, second)
         else:
-            if second == format(second):
+            if isinstance(second, str):
                 second = second.replace("\'", "\\\'")
             expression = "{} '{}'".format(expression, second)
         return eval(expression)
