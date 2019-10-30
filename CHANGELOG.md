@@ -1,3 +1,13 @@
+What's new in iParrot 1.0.5?
+===========================
+Release Date: 2019-10-30
+
+Release Feature:
+* record -s supports both har file and directory
+* solve some problems about response format
+* fix bugs
+* update readme
+
 What's new in iParrot 1.0.4?
 ===========================
 Release Date: 2019-10-25

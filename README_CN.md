@@ -93,7 +93,7 @@ Arguments:
   -i, --interval INTERVAL
                         请求的间隔时长（毫秒）, 默认使用录制所得的间隔
   -env, --environment ENVIRONMENT
-                        环境标识, 定义于project/environments/*.yml中
+                        环境标识, 定义于project/environments/*.yml中，默认以test_suites中定义的config为准
   -reset, --reset-after-case
                         是否在每个用例执行后重置内存中的环境变量, 默认'否'
 
@@ -347,6 +347,64 @@ parrot在进行请求回放的过程中，可以实时的拿到`actual result(�
 - --fail_stop: 若指定，则某个step验证失败后即终止运行
 - --fail\_retry_times: 某个step失败后的重试次数，默认不重试
 - --fail\_retry_interval: 某个step失败后重试间隔时间
+
+***
+
+#### 1.3.4 适配多套环境的场景
+
+Parrot借鉴了Postman的环境管理机制
+
+##### 录制时自动预留了environment配置，可手工编辑
+
+以我们在1.3.2章节录制的demo2为例，自动生成的环境配置为`demo2/environments/sample_env.yml`，默认生成的内容预留了几套环境标识，内容为空，如：
+
+```
+development: {}
+global: {}
+production: {}
+test: {}
+```
+
+同时在自动生成的test\_suites，test\_cases和test\_steps中的`config`部分通过`import`和`environment: global`进行了默认引用，这些都可以被手工编辑
+
+> global为全局共用，其余各自独立，也可自定义新的环境标识
+
+假设我们部署了多套`ParrotSample`应用，分别代表了不同的运行环境，以端口号做区分：
+
+```
+开发环境：8081
+测试环境：8082
+生产环境：8080
+```
+
+我们希望同一套测试用例在不同的环境下是可以被复用的，我们可以这样做
+
+首先，修改`demo2/environments/sample_env.yml`:
+
+```
+development:
+  host: 10.10.100.100:8081
+global:
+  host: 10.10.100.100:8080
+production:
+  host: 10.10.100.100:8080
+test:
+  host: 10.10.100.100:8082
+```
+
+然后，手工将所有test_steps中的yml中录制生成的`host`的值全部替换为`${host}`变量引用
+
+##### 回放时可以进行多套环境的切换
+
+在1.2.3章节有讲到，`parrot replay`命令提供了`-env, --environment`参数，可以在执行时指定所选的环境标识，如：
+
+```
+$ parrot replay -s demo2/test_suites -t demo2 -env development
+```
+
+目前，在test\_suites/test\_cases/test\_steps的config中均包含环境引用，同时`replay`传参也可以指定，他们的加载优先级是：
+
+**parameter > test\_suite.config > test\_case.config > test\_step.config**
 
 ***
 
@@ -606,22 +664,76 @@ validations:
 **常用的验证方法：**
 
 - **eq(equals): 相等**
-	- 示例：`1 eq 1`, `'a' eq 'a'`, `[1, 2] eq [1, 2]`, `{'a': 1 } eq {'a': 1}`, `status.code eq 200`
+	- 释义：`1 eq 1`, `'a' eq 'a'`, `[1, 2] eq [1, 2]`, `{'a': 1 } eq {'a': 1}`, `status.code eq 200`
+	- 用法：
+	
+		```
+		validations:
+		- eq:
+		    status.code: 200
+		- eq:
+		    headers.Content-Type: application/json;charset=UTF-8
+		- eq:
+		    content.data[0].id: 1000
+		```
 	- 类似的方法：`neq`, `lt`, `gt`, `le`, `ge`
 - **len_eq(length equals): 长度相等**
-	- 示例：`'ab' len_eq 2`, `[1, 2] len_eq 2`, `{'a': 1} len_eq 1`
+	- 释义：`'ab' len_eq 2`, `[1, 2] len_eq 2`, `{'a': 1} len_eq 1`
+	- 用法：
+		
+		```
+		validations:
+		- len_eq:
+		    headers.token: 32
+		- eq:
+		    content.datalist: 3
+		```
 	- 类似的方法：`len_neq`, `len_lt`, `len_gt`
 - **contains: 包含**
-	- 示例：`'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}`
+	- 释义：`'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}`
+	- 用法：
+		
+		```
+		validations:
+		- contains:
+		    headers.Content-Type: application/json
+		- contains:
+		    content.message: ok
+		```
 	- 类似的方法：`not_contains`
 - **in: 被包含**
-	- 示例：`'a' in 'ab'`, `'a' in ['a', 'b']`, `'a' in {'a': 1, 'b': 2}`
+	- 释义：`'a' in 'ab'`, `'a' in ['a', 'b']`, `'a' in {'a': 1, 'b': 2}`
+	- 用法：
+		
+		```
+		validations:
+		- in:
+		    status.code: [200, 302]
+		```
 	- 类似的方法：`not_in`
 - **is_false: 空**
-	- 示例：`0 is_false`, `'' is_false`, `[] is_false`, `{} is_false`
+	- 释义：`0 is_false`, `'' is_false`, `[] is_false`, `{} is_false`
+	- 用法：
+		
+		```
+		validations:
+		- is_false:
+		    content.datalist
+		- is_json:
+		    content
+		- is_instance:
+		    status.code: int
+		```
 	- 类似的方法：`is_true`, `exists`, `is_instance`, `is_json`
 - **re(regex): 匹配**
-	- 示例：`'1900-01-01' re r'\d+-\d+-\d+'`
+	- 释义：`'1900-01-01' re r'\d+-\d+-\d+'`
+	- 用法：
+		
+		```
+		validations:
+		- re:
+		    content.data[0].date: r"\d+-\d+-\d+"
+		```
 	- 类似的方法：`not_re`
 
 更多的方法及说明可以采用下面的方式了解：
@@ -695,7 +807,7 @@ Parrot用例结构中的environment参考了该机制
 一个项目可以配置多套环境，用来保存一些通用的环境变量，
 不同环境之间，变量名保持一致，变量值可有差异，
 在用例中通过${variable}的方式引用变量即可，减少手工修改
-运行环境的切换，可以在replay阶段通过--env参数指定即可
+运行环境的切换，可以在replay阶段通过-env/--environment参数指定即可
 ```
 
 #### 5.1.2 用例分层模式
