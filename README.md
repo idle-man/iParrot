@@ -93,7 +93,7 @@ Arguments:
   -i, --interval INTERVAL
                         interval time(ms) between each step, use the recorded interval as default
   -env, --environment ENVIRONMENT
-                        environment tag, defined in project/environments/*.yml
+                        environment tag, defined in project/environments/*.yml, use defined config in test_suites as default
   -reset, --reset-after-case
                         exclude filter on url, separated by ',' if multiple
 
@@ -348,6 +348,64 @@ After a single step fails, the current Parrot does not terminate the execution o
 - --fail_stop: If specified, the operation will be terminated after a step verification fails
 - --fail\_retry_times: The number of retries after a step failed, 0 as default
 - --fail\_retry_interval: retry interval after a step failure
+
+***
+
+#### 1.3.4 Adapting multiple sets of environments
+
+Parrot draws on Postman's environmental management mechanism.
+
+##### The environment configuration is automatically reserved during recording and can be edited manually.
+
+Take the recorded demo2 in section 1.3.2 as an example. The automatically generated environment is configured as `demo2/environments/sample_env.yml`. The default generated content is reserved for several sets of environment identifiers and the content is empty:
+
+```
+development: {}
+global: {}
+production: {}
+test: {}
+```
+
+At the same time, the `config` part of the automatically generated test\_suites, test\_cases and test\_steps is referenced by `import` and `environment: global`, which can be edited manually.
+
+> `global` is globally shared, the rest are independent, and the new environment identifier can be customized.
+
+Suppose we have deployed multiple sets of `ParrotSample` applications, which represent different operating environments, separated by port number:
+
+```
+development: 8081
+test: 8082
+production: 8080
+```
+
+We hope that the same set of test cases can be reused in different environments. We can do like below:
+
+Firstly, edit `demo2/environments/sample_env.yml`:
+
+```
+development:
+  host: 10.10.100.100:8081
+global:
+  host: 10.10.100.100:8080
+production:
+  host: 10.10.100.100:8080
+test:
+  host: 10.10.100.100:8082
+```
+
+Then, manually replace all the values ​​of the `host` in all generated test_steps ymls with the `${host}` variable reference.
+
+##### Multiple sets of environment switching during playback
+
+As mentioned in Section 1.2.3, the `parrot replay` command provides the `-env, --environment` parameter, which specifies the selected environment identifier at execution time.
+
+```
+$ parrot replay -s demo2/test_suites -t demo2 -env development
+```
+
+Currently, the environment reference is included in the config of test\_suites/test\_cases/test\_steps, and the `replay` parameter can also be specified. The load priority is:
+
+**parameter > test\_suite.config > test\_case.config > test\_step.config**
 
 ***
 
@@ -609,21 +667,75 @@ validations:
 
 - **eq(equals):**
 	- Example: `1 eq 1`, `'a' eq 'a'`, `[1, 2] eq [1, 2]`, `{'a': 1 } eq {'a': 1}`, `status.code eq 200`
+	- Usage:
+	
+		```
+		validations:
+		- eq:
+		    status.code: 200
+		- eq:
+		    headers.Content-Type: application/json;charset=UTF-8
+		- eq:
+		    content.data[0].id: 1000
+		```
 	- Similar methods: `neq`, `lt`, `gt`, `le`, `ge`
 - **len_eq(length equals):**
 	- Example: `'ab' len_eq 2`, `[1, 2] len_eq 2`, `{'a': 1} len_eq 1`
+	- Usage:
+		
+		```
+		validations:
+		- len_eq:
+		    headers.token: 32
+		- eq:
+		    content.datalist: 3
+		```
 	- Similar methods: `len_neq`, `len_lt`, `len_gt`
 - **contains:**
 	- Example: `'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}`
+	- Usage:
+		
+		```
+		validations:
+		- contains:
+		    headers.Content-Type: application/json
+		- contains:
+		    content.message: ok
+		```
 	- Similar methods: `not_contains`
 - **in:**
 	- Example: `'a' in 'ab'`, `'a' in ['a', 'b']`, `'a' in {'a': 1, 'b': 2}`
+	- Usage:
+		
+		```
+		validations:
+		- in:
+		    status.code: [200, 302]
+		```
 	- Similar methods: `not_in`
 - **is_false:**
 	- Example: `0 is_false`, `'' is_false`, `[] is_false`, `{} is_false`
+	- Usage:
+		
+		```
+		validations:
+		- is_false:
+		    content.datalist
+		- is_json:
+		    content
+		- is_instance:
+		    status.code: int
+		```
 	- Similar methods: `is_true`, `exists`, `is_instance`, `is_json`
 - **re(regex):**
 	- Example: `'1900-01-01' re r'\d+-\d+-\d+'`
+	- Usage:
+		
+		```
+		validations:
+		- re:
+		    content.data[0].date: r"\d+-\d+-\d+"
+		```
 	- Similar methods: `not_re`
 
 More methods and instructions can be found in the following way:
@@ -701,7 +813,7 @@ Variable names are consistent between different environments, and values ​​c
 
 In the use case, you can refer to the variable by means of ${variable}, reducing manual modification.
 
-The switching of the operating environment can be specified in the replay phase by the --env parameter.
+The switching of the operating environment can be specified in the replay phase by the -env/--environment parameter.
 ```
 
 #### 5.1.2 Use case layering mode
