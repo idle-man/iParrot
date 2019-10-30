@@ -132,7 +132,7 @@ class CaseParser(object):
         self.step_tpl = {
             'config': {
                 'name': '',
-                'environment': 'development',
+                'environment': 'global',
                 'import': '',
                 'variables': {},
             },
@@ -147,7 +147,7 @@ class CaseParser(object):
         self.case_tpl = {
             'config': {
                 'name': "",
-                'environment': 'development',
+                'environment': 'global',
                 'import': '',
                 'variables': {},
             },
@@ -158,7 +158,7 @@ class CaseParser(object):
         self.suite_tpl = {
             'config': {
                 'name': "",
-                'environment': 'development',
+                'environment': 'global',
                 'import': '',
                 'variables': {},
             },
