@@ -4,6 +4,7 @@ Release Date: 2019-11-08
 
 Release Feature:
 * `parrot record` has the `-ae, --auto-extract` parameter added
+* fix bugs on simple_assert and log-mode
 * update readme
 
 What's new in iParrot 1.0.5?

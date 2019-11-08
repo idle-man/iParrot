@@ -140,7 +140,7 @@ def main_record():
         opt.exit()
 
     set_logger(
-        mode=args.log_mode,
+        mode=int(args.log_mode),
         level=args.log_level,
         path=args.log_path if args.log_path else args.target,
         name=args.log_name
@@ -194,7 +194,7 @@ def main_replay():
         opt.exit()
 
     set_logger(
-        mode=args.log_mode,
+        mode=int(args.log_mode),
         level=args.log_level,
         path=args.log_path if args.log_path else args.target,
         name=args.log_name

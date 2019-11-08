@@ -98,7 +98,7 @@ class Player(object):
                     'fail': 0
                 }
             }
-            logger.info("Run test suite: {}".format(json.dumps(_suite)))
+            logger.info("Run test suite: {}".format(json.dumps(_suite, ensure_ascii=False)))
 
             # do hook actions before a suite
             logger.info(" - Do setup hook actions of the suite: {}".format(_suite['setup_hooks']))
@@ -117,7 +117,7 @@ class Player(object):
                         'fail': 0
                     }
                 }
-                logger.info("Run test case: {}".format(json.dumps(_case)))
+                logger.info("Run test case: {}".format(json.dumps(_case, ensure_ascii=False)))
 
                 # do hook actions before a case
                 logger.info(" - Do setup hook actions of the case: {}".format(_case['setup_hooks']))
@@ -131,7 +131,7 @@ class Player(object):
                         'name': _step['config']['name'],
                         'status': True
                     }
-                    logger.info("Run test step: {}".format(json.dumps(_step)))
+                    logger.info("Run test step: {}".format(json.dumps(_step, ensure_ascii=False)))
 
                     # do hook actions before a request
                     logger.info(" - Do setup hook actions of the step: {}".format(_step['setup_hooks']))
@@ -141,7 +141,7 @@ class Player(object):
                     self.__set_variables(_step['config']['variables'])
                     self.__set_variables(_case['config']['variables'])
                     self.__set_variables(_suite['config']['variables'])
-                    logger.info(" - Config variables of the step: {}".format(json.dumps(self.variables)))
+                    logger.info(" - Config variables of the step: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
                     # handle request interval
                     if not isinstance(interval, (int, float)):
@@ -174,7 +174,7 @@ class Player(object):
                         if 'extract' in _step['response'] and _step['response']['extract']:
                             logger.info(" - Extract variables: {}".format(_step['response']['extract']))
                             self.__extract_variable(extract=_step['response']['extract'], response=response['response'])
-                            logger.debug(" - Variables after extract: {}".format(json.dumps(self.variables)))
+                            logger.debug(" - Variables after extract: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
                         # do response validation
                         _validate = self.do_validation(response=response['response'], rules=_step['validations'])
@@ -250,7 +250,7 @@ class Player(object):
         self.generate_report(output=output)
 
     def run_one_request(self, request):
-        logger.debug("Run request: {}".format(json.dumps(request)))
+        logger.debug("Run request: {}".format(json.dumps(request, ensure_ascii=False)))
         ret = self.session.request(
             url=self.__get_variables("{}://{}{}".format(request['protocol'], request['host'], request['url'])),
             method=request['method'],
@@ -259,13 +259,13 @@ class Player(object):
             headers=self.__get_variables(request['headers']),
             cookies=self.__get_variables(request['cookies'])
         )
-        logger.debug("Get response: {}".format(json.dumps(ret)))
+        logger.debug("Get response: {}".format(json.dumps(ret, ensure_ascii=False)))
         return ret
 
     def __set_variables(self, variables):
-        logger.debug(" - To set variables: {}".format(json.dumps(variables)))
+        logger.debug(" - To set variables: {}".format(json.dumps(variables, ensure_ascii=False)))
         self.variables.update(variables)
-        logger.debug(" - Variables after update: {}".format(json.dumps(self.variables)))
+        logger.debug(" - Variables after update: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
     def __extract_variable(self, extract, response):
         if not extract:
@@ -285,7 +285,7 @@ class Player(object):
         # extract cookies
         for _key, _val in response['cookies'].items():
             _all_["cookies.{}".format(_key)] = _val
-        logger.debug(" - All optional variables: {}".format(json.dumps(_all_)))
+        logger.debug(" - All optional variables: {}".format(json.dumps(_all_, ensure_ascii=False)))
 
         # extract specified element, and set in self.variables
         if isinstance(extract, dict):
@@ -312,7 +312,7 @@ class Player(object):
                     _new = {}
                     for _key, _val in _source.items():
                         _new[self.__get_real_value(_key)] = self.__get_real_value(_val)
-                    return json.dumps(_new)
+                    return json.dumps(_new, ensure_ascii=False)
                 except json.JSONDecodeError:
                     pass
             return self.__get_real_value(source)
@@ -420,7 +420,7 @@ class Player(object):
                     })
                     if not _status:
                         result['status'] = False
-        logger.info(" - Validation result: {}".format(json.dumps(result)))
+        logger.info(" - Validation result: {}".format(json.dumps(result, ensure_ascii=False)))
         return result
 
     def do_hook_actions(self, actions):
