@@ -195,7 +195,7 @@ class CaseParser(object):
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
                 continue
-            logger.debug(" - yaml dict: {}".format(json.dumps(_dict)))
+            logger.debug(" - yaml dict: {}".format(json.dumps(_dict, ensure_ascii=False)))
             _tmp_suite = copy.deepcopy(self.suite_tpl)
             _tmp_case = copy.deepcopy(self.case_tpl)
             _tmp_step = copy.deepcopy(self.step_tpl)
@@ -211,15 +211,15 @@ class CaseParser(object):
                 self.__parse_test_step(the_dict=_tmp_step, base_path=get_file_path(_file))
                 _tmp_case['test_steps'].append(_tmp_step)
                 _tmp_suite['test_cases'].append(_tmp_case)
-            logger.debug(" - one suite: {}".format(json.dumps(_tmp_suite)))
+            logger.debug(" - one suite: {}".format(json.dumps(_tmp_suite, ensure_ascii=False)))
             items.append(_tmp_suite)
         logger.info("Done.")
-        logger.debug("The test suites are: {}".format(json.dumps(items)))
+        logger.debug("The test suites are: {}".format(json.dumps(items, ensure_ascii=False)))
         return items
 
     def __parse_test_step(self, the_dict, base_path):
         self.__parse_environments(the_dict, base_path)
-        logger.debug(" - test step: {}".format(json.dumps(the_dict)))
+        logger.debug(" - test step: {}".format(json.dumps(the_dict, ensure_ascii=False)))
 
     def __parse_test_case(self, the_dict, base_path):
         self.__parse_environments(the_dict, base_path)
@@ -229,14 +229,14 @@ class CaseParser(object):
                 _step = "{}/{}".format(base_path, _step)
             try:
                 the_dict['test_steps'][_idx] = yaml.full_load(self.__read_file(_step))
-                logger.debug(" - step info: {}".format(json.dumps(the_dict['test_steps'][_idx])))
+                logger.debug(" - step info: {}".format(json.dumps(the_dict['test_steps'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
                 continue
             self.__parse_test_step(
                 the_dict=the_dict['test_steps'][_idx],
                 base_path=base_path)
-        logger.debug(" - test case: {}".format(json.dumps(the_dict)))
+        logger.debug(" - test case: {}".format(json.dumps(the_dict, ensure_ascii=False)))
 
     def __parse_test_suite(self, the_dict, base_path):
         self.__parse_environments(the_dict, base_path)
@@ -246,7 +246,7 @@ class CaseParser(object):
                 _case = "{}/{}".format(base_path, _case)
             try:
                 the_dict['test_cases'][_idx] = yaml.full_load(self.__read_file(_case))
-                logger.debug(" - case info: {}".format(json.dumps(the_dict['test_cases'][_idx])))
+                logger.debug(" - case info: {}".format(json.dumps(the_dict['test_cases'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
                 continue
@@ -270,7 +270,7 @@ class CaseParser(object):
                 the_dict['config']['variables'] = _variables
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
-        logger.debug(" - config variables: {}".format(json.dumps(the_dict['config']['variables'])))
+        logger.debug(" - config variables: {}".format(json.dumps(the_dict['config']['variables'], ensure_ascii=False)))
 
     # parse source file and generate test cases
     def source_to_case(self, source, target="ParrotProject",
@@ -367,7 +367,7 @@ class CaseParser(object):
                                        include=validate_include, exclude=validate_exclude,
                                        auto_extract=auto_extract):
                 continue
-            logger.debug("test_step: {}".format(json.dumps(step_dict)))
+            logger.debug("test_step: {}".format(json.dumps(step_dict, ensure_ascii=False)))
 
             # add step into case
             case_dict['test_steps'].append(step_dict)
@@ -463,7 +463,7 @@ class CaseParser(object):
     # parse request block and filter unneeded urls
     def __har_request(self, entry, step_dict, include, exclude, auto_extract=False):
         if not ('request' in entry.keys() and entry['request']):
-            logger.warning(" * There is no request in this entry: {}".format(json.dumps(entry)))
+            logger.warning(" * There is no request in this entry: {}".format(json.dumps(entry, ensure_ascii=False)))
             return False
         _req = entry['request']
 
@@ -528,17 +528,17 @@ class CaseParser(object):
                 self.__har_extract(step_dict, _item['name'], _item['value'], 'data', auto_extract)
         else:
             step_dict['request']['data'] = _data
-        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
         # get headers
         step_dict['request']['headers'] = {}
         self.__har_headers(_req.get('headers'), step_dict['request']['headers'], RECORD_HEADERS, auto_extract)
-        logger.debug(" - headers: {}".format(json.dumps(step_dict['request']['headers'])))
+        logger.debug(" - headers: {}".format(json.dumps(step_dict['request']['headers'], ensure_ascii=False)))
 
         # get cookies
         step_dict['request']['cookies'] = {}
         self.__har_cookies(_req.get('cookies'), step_dict['request']['cookies'], auto_extract)
-        logger.debug(" - cookies: {}".format(json.dumps(step_dict['request']['cookies'])))
+        logger.debug(" - cookies: {}".format(json.dumps(step_dict['request']['cookies'], ensure_ascii=False)))
 
         return True
 
@@ -560,7 +560,7 @@ class CaseParser(object):
                 else:
                     step_dict['config']['variables']["{}.{}".format(i_name, _k)] = _v
                 _value[_k] = '${' + "{}.{}".format(i_name, _k) + '}'
-            step_dict['request'][i_type][i_name] = json.dumps(_value)
+            step_dict['request'][i_type][i_name] = json.dumps(_value, ensure_ascii=False)
         else:
             if auto_extract and format(_value) in self.variables.keys():
                 step_dict['config']['variables'][i_name] = '${' + self.variables[_value]['key'] + '}'
@@ -572,7 +572,7 @@ class CaseParser(object):
     # parse response block and make validations
     def __har_response(self, entry, step_dict, include, exclude, auto_extract=False):
         if not ('response' in entry.keys() and entry['response']):
-            logger.warning(" * There is no response in this entry: {}".format(json.dumps(entry)))
+            logger.warning(" * There is no response in this entry: {}".format(json.dumps(entry, ensure_ascii=False)))
             return False
         _rsp = entry['response']
 
@@ -597,7 +597,7 @@ class CaseParser(object):
             if _k in _vin and _k not in _vex:
                 step_dict['validations'].append({"eq": {"headers.{}".format(_k): _v}})
 
-        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
         # get cookies
         step_dict['response']['cookies'] = {}
@@ -651,8 +651,8 @@ class CaseParser(object):
         else:
             logger.warning(" * Unsupported mimeType: {}".format(_mime))
             # step_dict['validations'].append({"eq": {'content': _text}})
-        logger.debug(" - validations: {}".format(json.dumps(step_dict['validations'])))
-        logger.debug(" - self.variables: {}".format(json.dumps(self.variables)))
+        logger.debug(" - validations: {}".format(json.dumps(step_dict['validations'], ensure_ascii=False)))
+        logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
         return True
 
@@ -664,13 +664,13 @@ class CaseParser(object):
         #   Charles: 2019-07-31T14:21:35.033+08:00
         #   Other: Wed, 30 Jan 2019 07:56:42
         if not ('startedDateTime' in entry.keys() and entry['startedDateTime']):
-            logger.warning(" * There is no startedDateTime in this entry: {}".format(json.dumps(entry)))
+            logger.warning(" * There is no startedDateTime in this entry: {}".format(json.dumps(entry, ensure_ascii=False)))
             return False
         s_time = entry['startedDateTime']
 
         if not ('time' in entry.keys() and entry['time']):
             if not ('times' in entry.keys() and entry['times']):
-                logger.warning(" * There is no time in this entry: {}".format(json.dumps(entry)))
+                logger.warning(" * There is no time in this entry: {}".format(json.dumps(entry, ensure_ascii=False)))
                 return False
             else:
                 i_time = int(round(entry['times']))
@@ -732,6 +732,6 @@ if __name__ == '__main__':
                              include=[], exclude=['.js', '.css'],
                              validate_include=[], validate_exclude=['timestamp', 'tag', 'token'],
                              auto_extract=False)
-    print(json.dumps(case))
+    print(json.dumps(case, ensure_ascii=False))
     case = cp.load_test_case(suite_or_case='../demo/test_suites', environment='production')
-    print(json.dumps(case))
+    print(json.dumps(case, ensure_ascii=False))

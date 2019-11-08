@@ -190,7 +190,7 @@ class Validator(object):
         if not expression:
             logger.warning("Unsupported comparator: {}, please refer to: {}".format(
                 comparator,
-                json.dumps(self.UNIFORM_COMPARATOR)))
+                json.dumps(self.UNIFORM_COMPARATOR, ensure_ascii=False)))
             return False
 
         # get the actual value in response
@@ -313,7 +313,7 @@ if __name__ == '__main__':
         'content.string': 'abc def'
     })
 
-    print(json.dumps(v.UNIFORM_COMPARATOR, indent=4))
+    print(json.dumps(v.UNIFORM_COMPARATOR, ensure_ascii=False, indent=4))
     assert v.validate(comparator='neq', actual='status.code', expected=500) is True
     assert v.validate(comparator='str_eq', actual='content.number', expected='2') is True
     assert v.validate(comparator='len_eq', actual='content.number', expected=1) is True
