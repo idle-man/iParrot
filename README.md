@@ -34,7 +34,7 @@ Two core commands are: **record** and **replay**
 ```
 $ parrot help
 Automated test solution for http requests based on recording and playback
-Version: 1.0.2
+Version: ...
 
 Usage: parrot [-h] [-v] [command] [<args>]
 
@@ -68,6 +68,7 @@ Arguments:
                         include filter on response validation, separated by ',' if multiple
   -ve, --validation-exclude V_EXCLUDE  
                         exclude filter on response validation, separated by ',' if multiple
+  -ae, --auto-extract   automatic identification of interface dependencies or not, False as default
   
   --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
   --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
@@ -95,9 +96,9 @@ Arguments:
   -env, --environment ENVIRONMENT
                         environment tag, defined in project/environments/*.yml, use defined config in test_suites as default
   -reset, --reset-after-case
-                        exclude filter on url, separated by ',' if multiple
+                        reset runtime environment or not, False as default
 
-  --fail-stop FAIL_STOP stop or not when a test step failed on validation, False as default
+  --fail-stop           stop or not when a test step failed on validation, False as default
   --fail-retry-times FAIL_RETRY_TIMES
                         max retry times when a test step failed on validation, 0 as default
   --fail-retry-interval FAIL_RETRY_INTERVAL 
@@ -276,6 +277,14 @@ request:
     name: ${hobby}
   ...
 ```
+
+In iParrot 1.0.6 and later, `parrot record` has the `-ae, --auto-extract` parameter added. 
+
+If this parameter is specified, parrot will automatically recognize the parameter dependency between interfaces during the parsing process.
+
+The `extract` extraction and `${variable}` references are automatically completed when the use cases are generated.
+
+In view of the possibility of many formats in the actual scene, the 'automatic' identification may cause some accidental or omission, and it is recommended to perform artificial inspection and correction after its execution.
 
 Regarding the recording phase, the above scenarios should cover most of the use cases. If there are other unsupported questions, welcome feedback an issue: <https://github.com/idle-man/iParrot/issues>
 

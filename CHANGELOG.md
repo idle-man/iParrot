@@ -1,5 +1,13 @@
 What's new in iParrot 1.0.5?
 ===========================
+Release Date: 2019-11-08
+
+Release Feature:
+* `parrot record` has the `-ae, --auto-extract` parameter added
+* update readme
+
+What's new in iParrot 1.0.5?
+===========================
 Release Date: 2019-10-30
 
 Release Feature:
