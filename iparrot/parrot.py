@@ -36,6 +36,7 @@ Arguments:
                         include filter on response validation, separated by ',' if multiple
   -ve, --validation-exclude V_EXCLUDE  
                         exclude filter on response validation, separated by ',' if multiple
+  -ae, --auto-extract   automatic identification of interface dependencies or not, False as default
   
   --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
   --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
@@ -57,9 +58,9 @@ Arguments:
   -env, --environment ENVIRONMENT
                         environment tag, defined in project/environments/*.yml
   -reset, --reset-after-case
-                        reset runtime environment or not, 'NO' as default
+                        reset runtime environment or not, False as default
 
-  --fail-stop FAIL_STOP stop or not when a test step failed on validation, False as default
+  --fail-stop           stop or not when a test step failed on validation, False as default
   --fail-retry-times FAIL_RETRY_TIMES
                         max retry times when a test step failed on validation, 0 as default
   --fail-retry-interval FAIL_RETRY_INTERVAL 
@@ -122,6 +123,8 @@ def main_record():
                      help="include filter on response validation, separated by ',' if multiple")
     opt.add_argument('-ve', '-VE', '--validation-exclude', dest="v_exclude", action="store", default=None,
                      help="exclude filter on response validation, separated by ',' if multiple")
+    opt.add_argument('-ae', '-AE', '--auto-extract', dest="auto_extract", action="store_true", default=False,
+                     help="automatic identification of interface dependencies or not")
 
     opt.add_argument('--log-level', dest="log_level", action="store", default="info",
                      help="log level: debug, info, warn, error, info as default")
@@ -149,7 +152,8 @@ def main_record():
         include=args.include.split(',') if args.include else [],
         exclude=args.exclude.split(',') if args.exclude else [],
         validate_include=args.v_include.split(',') if args.v_include else [],
-        validate_exclude=args.v_exclude.split(',') if args.v_exclude else []
+        validate_exclude=args.v_exclude.split(',') if args.v_exclude else [],
+        auto_extract=args.auto_extract
     )
 
 
@@ -167,7 +171,7 @@ def main_replay():
     opt.add_argument('-env', '--environment', dest="environment", action="store", default=None,
                      help="environment tag, defined in project/environments/*.yml")
     opt.add_argument('-reset', '--reset-after-case', dest="reset_after_case", action="store_true", default=False,
-                     help="reset runtime environment or not, 'NO' as default")
+                     help="reset runtime environment or not, False as default")
 
     opt.add_argument('--fail-stop', dest="fail_stop", action="store_true", default=False,
                      help="stop or not when a test step failed on validation, False as default")
@@ -200,7 +204,7 @@ def main_replay():
         suite_or_case=args.suite_or_case,
         environment=args.environment,
         interval=args.interval,
-        reset_after_case=True if args.reset_after_case else False,
+        reset_after_case=args.reset_after_case,
         fail_stop=args.fail_stop,
         retry_times=args.fail_retry_times,
         retry_interval=args.fail_retry_interval,

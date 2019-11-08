@@ -34,7 +34,7 @@ GitHub地址：<https://github.com/idle-man/iParrot>
 ```
 $ parrot help
 Automated test solution for http requests based on recording and playback
-Version: 1.0.2
+Version: ...
 
 Usage: parrot [-h] [-v] [command] [<args>]
 
@@ -68,6 +68,7 @@ Arguments:
                         用于validation生成的"包含"过滤器, 模糊匹配response, 若有多个'或'条件请用','分割
   -ve, --validation-exclude V_EXCLUDE  
                         用于validation生成的"不包含"过滤器, 模糊匹配response, 若有多个'或'条件请用','分割
+  -ae, --auto-extract   是否自动识别并提取接口间的传参依赖, 默认'否'
   
   --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
   --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
@@ -97,7 +98,7 @@ Arguments:
   -reset, --reset-after-case
                         是否在每个用例执行后重置内存中的环境变量, 默认'否'
 
-  --fail-stop FAIL_STOP 是否在某个请求失败后停止执行, 默认'否'
+  --fail-stop           是否在某个请求失败后停止执行, 默认'否'
   --fail-retry-times FAIL_RETRY_TIMES
                         某个请求失败后的重试次数, 默认为0
   --fail-retry-interval FAIL_RETRY_INTERVAL 
@@ -275,6 +276,10 @@ request:
     name: ${hobby}
   ...
 ```
+
+在iParrot 1.0.6及后续版本中，`parrot record`增加了`-ae, --auto-extract`参数，若指定该参数的话，则parrot会在解析过程中自动识别接口间的传参依赖，并在生成用例时自动完成`extract`提取和`${variable}`引用。
+
+鉴于实际场景中存在诸多格式的可能性，该`自动`识别可能会造成一些误伤或遗漏，建议在执行之后进行人为的检查和矫正。
 
 关于`录制`阶段，上述场景应该可以覆盖大部分的业务场景了，如果有其他未支持的问题，欢迎反馈Issue：<https://github.com/idle-man/iParrot/issues>
 
