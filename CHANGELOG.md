@@ -1,4 +1,4 @@
-What's new in iParrot 1.0.5?
+What's new in iParrot 1.0.6?
 ===========================
 Release Date: 2019-11-08
 
