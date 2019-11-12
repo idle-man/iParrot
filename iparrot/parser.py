@@ -228,7 +228,8 @@ class CaseParser(object):
             if _step.startswith('..'):
                 _step = "{}/{}".format(base_path, _step)
             try:
-                the_dict['test_steps'][_idx] = yaml.full_load(self.__read_file(_step))
+                the_dict['test_steps'][_idx] = copy.deepcopy(self.step_tpl)
+                the_dict['test_steps'][_idx].update(yaml.full_load(self.__read_file(_step)))
                 logger.debug(" - step info: {}".format(json.dumps(the_dict['test_steps'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
@@ -245,7 +246,8 @@ class CaseParser(object):
             if _case.startswith('..'):
                 _case = "{}/{}".format(base_path, _case)
             try:
-                the_dict['test_cases'][_idx] = yaml.full_load(self.__read_file(_case))
+                the_dict['test_cases'][_idx] = copy.deepcopy(self.case_tpl)
+                the_dict['test_cases'][_idx].update(yaml.full_load(self.__read_file(_case)))
                 logger.debug(" - case info: {}".format(json.dumps(the_dict['test_cases'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
@@ -271,6 +273,43 @@ class CaseParser(object):
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
         logger.debug(" - config variables: {}".format(json.dumps(the_dict['config']['variables'], ensure_ascii=False)))
+
+    def auto_template(self, target="ParrotProject"):
+        """
+        :param target: target directory for case output
+        :return: suite dict
+        """
+        suite_dict = copy.deepcopy(self.suite_tpl)
+        case_dict = copy.deepcopy(self.case_tpl)
+        step_dict = copy.deepcopy(self.step_tpl)
+        suite_dict['config']['name'] = case_dict['config']['name'] = 'template'
+        step_dict['config'].update({
+            'name': 'step',
+            'variables': {
+                'variable1': 123
+            }
+        })
+        step_dict['request'] = {
+            'protocol': "http",
+            'method': 'GET',
+            'host': "www.example.com",
+            'url': "/demo",
+            'params': {
+                'param1': 'abc',
+                'param2': '${variable1}',
+                'param3': '${{today()}}'
+            },
+            'cookies': {},
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36'
+            },
+            'data': {}
+        }
+
+        case_dict['test_steps'].append(step_dict)
+        suite_dict['test_cases'].append(case_dict)
+        self.__generate_case(suite_dict, target)
+        return suite_dict
 
     # parse source file and generate test cases
     def source_to_case(self, source, target="ParrotProject",
@@ -426,7 +465,7 @@ class CaseParser(object):
                             if _ex_k in self.variables.keys() and self.variables[_ex_k]['flag']:
                                 _step['response']['extract'][_ex_v] = _ex_v
                             del _step['response']['extract'][_ex_k]
-                    else:
+                    elif _k != 'time.spent':
                         del _step['response'][_k]
                 _s_id = "{}{}".format('0'*(4-len(str(_t_sid))), _t_sid)  # step id
                 _s_path = "{}/test_steps/{}".format(target, '/'.join(_step['config']['name'].split('/')[1:-1]))
@@ -727,6 +766,8 @@ class CaseParser(object):
 if __name__ == '__main__':
     set_logger(mode=1, level='debug')
     cp = CaseParser()
+    cp.auto_template(target='../demo')
+    exit()
     case = cp.source_to_case(source='../demo/parrot-demo.har',
                              target='../demo',
                              include=[], exclude=['.js', '.css'],

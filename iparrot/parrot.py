@@ -16,10 +16,26 @@ command:
       see detail usage: `parrot help record`
   replay - run the recorded test cases and do validations
       see detail usage: `parrot help replay`
+  template - generate test case template file
+      see detail usage: `parrot help template`
 
 optional arguments:
   -h, --help         show this help message and exit
   -v, -V, --version  show version
+""".format(__description__, __version__)
+
+template_usage = """{}
+Version: {}
+
+Usage: parrot template [<args>]
+
+Arguments:
+  -t, --target TARGET   target output path, 'ParrotProject' as default
+
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
 """.format(__description__, __version__)
 
 record_usage = """{}
@@ -98,12 +114,44 @@ def main_help():
             print(record_usage)
         elif action in ('replay', 'playback', 'run', 'talk'):
             print(replay_usage)
+        elif action in ('template', 'tpl'):
+            print(template_usage)
         else:
             print(usage)
         opt.exit()
     else:
         print(usage)
         opt.exit()
+
+
+def main_template():
+    from iparrot.parser import CaseParser
+    from iparrot.modules.logger import logger, set_logger
+
+    opt = ArgumentParser(usage=usage)
+    opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProject',
+                     help="target output path, 'ParrotProject' as default")
+
+    opt.add_argument('--log-level', dest="log_level", action="store", default="info",
+                     help="log level: debug, info, warn, error, info as default")
+    opt.add_argument('--log-mode', dest="log_mode", action="store", default=1,
+                     help="log mode: 1-on screen, 2-in log file, 3-1&2, 1 as default")
+    opt.add_argument('--log-path', dest="log_path", action="store", default=None,
+                     help="log path: <project path> as default")
+    opt.add_argument('--log-name', dest="log_name", action="store", default="parrot.log",
+                     help="log name: parrot.log as default")
+    args = opt.parse_args()
+
+    set_logger(
+        mode=int(args.log_mode),
+        level=args.log_level,
+        path=args.log_path if args.log_path else args.target,
+        name=args.log_name
+    )
+    parser = CaseParser()
+    parser.auto_template(
+        target=args.target
+    )
 
 
 def main_record():
@@ -228,6 +276,9 @@ def main():
     elif sys.argv[1].lower() in ('replay', '--replay', 'playback', '--playback', 'run', '--run', 'talk', '--talk'):
         del sys.argv[1]
         main_replay()
+    elif sys.argv[1].lower() in ('template', '--template', 'tpl', '--tpl'):
+        del sys.argv[1]
+        main_template()
     else:
         sys.argv[1] = 'help'
         main_help()
