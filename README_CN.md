@@ -29,7 +29,7 @@ GitHub地址：<https://github.com/idle-man/iParrot>
 
 #### 1.2.1 查看Parrot支持的命令：`parrot help`
 
-其中，两个核心命令分别是：**record - 录制**，**replay - 回放**
+其中，两个核心命令分别是：**record - 录制**，**playback - 回放**
 
 ```
 $ parrot help
@@ -41,8 +41,12 @@ Usage: parrot [-h] [-v] [command] [<args>]
 command:
   record - 解析源文件，自动生成标准化测试用例
       查看详细用法: parrot help record
-  replay - 执行标准化测试用例，验证结果，输出报告
-      查看详细用法: parrot help replay
+  playback - 执行标准化测试用例，验证结果，输出报告
+      查看详细用法: parrot help playback
+  template - 自动生成标准化用例模板和示例
+      查看详细用法：parrot help template
+  replace - 根据指定的规则对已生成的用例的config.variables进行批量替换
+      查看详细用法：parrot help replace
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -77,15 +81,15 @@ Arguments:
 
 ```
 
-#### 1.2.3 回放命令的用法：`parrot help replay`
+#### 1.2.3 回放命令的用法：`parrot help playback`
 
 该步骤是执行指定的测试用例集，并生成测试报告
 
 ```
-$ parrot help replay
+$ parrot help playback
 ...
 
-Usage: parrot replay [<args>]
+Usage: parrot playback [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
@@ -104,6 +108,50 @@ Arguments:
   --fail-retry-interval FAIL_RETRY_INTERVAL 
                         某个请求失败后的重试时间间隔（毫秒）, 默认为100
                         
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
+
+```
+
+#### 1.2.4 模板命令的用法：`parrot help template`
+
+该步骤是自动生成标准化测试用例模板及示例，方便用户参照自建用例
+
+```
+$ parrot help template
+...
+
+Usage: parrot template [<args>]
+
+Arguments:
+  -t, --target TARGET   模板用例的输出路径, 默认为'ParrotProject'
+
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
+
+```
+
+#### 1.2.5 替换命令的用法：`parrot help replace`
+
+该步骤是根据指定的规则对已生成的用例的config.variables进行批量替换
+
+```
+$ parrot help replace
+...
+
+Usage: parrot replace [<args>]
+
+Arguments:
+  -s, --suite, -c, --case SUITE_OR_CASE
+                        测试用例/用例集, 可附带路径, *.yml 或 目录 [必传]
+  -t, --target TARGET   更新后用例输出路径, 默认为'ParrotProjectNew'
+  -r, --rule RULE       替换规则列表，多项用','分割 [必传]
+                        示例：'key=>value', 'value1=>value2'；只对某个api生效的话：'apiA::key=>value'
+
   --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
   --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
   --log-path  LOG_PATH  log path : <project path> as default
@@ -285,14 +333,60 @@ request:
 
 ***
 
-#### 1.3.3 回放，执行用例，验证结果，生成报告
+#### 1.3.3 模板，没有录制文件时生成标准化用例模板
 
-根据#1.2.3节的说明，我们大致了解了`replay - 回放`命令的基本用法，现在我们尝试回放一下前面录制的`demo2`
+实际工作中可能存在没有HAR文件的情况，例如上线前的新项目或新增的接口；对于已有HAR文件的用户，可以自行略过本步骤
+
+`parrot`1.1.0及后续版本提供了`template`命令来帮您生成标准化的用例模板，用户可在此基础上手工编辑您的测试用例
+
+具体用法参见#1.2.4章节的`parrot help template`
+
+生成的用例结构和`录制`阶段一致，包含一个`test_suite`、一个`test_case`、一个`test_step`、一个`environment`
+
+用户可以参考来编写自己的格式化用例，同样可用于后续的`回放`
+
+***
+
+#### 1.3.4 替换，根据指定的规则对已生成用例进行批量更新
+
+对于已经生成的用例，我们有时会有比较大量的更新需求，例如：
+- 需要将传参中的某个ID统一替换为另外一个
+- 需要将传参中的某个date替换为`${{today()}}`函数调用
+- 需要将请求中的host统一替换为某个新的测试地址
+- 需要将请求headers中的token替换为`${variable}`变量引用
+
+上述的更新有些可以借助IDE来完成
+
+为方面用户，`parrot`1.1.0及后续版本提供了`replace`命令，可以根据用户指定的规则对目标用例集进行批量的替换更新
+
+参见#1.2.5章节，可以通过`parrot help replace`查看用法
+
+例如：
+
+`parrot replace -s demo/test_suites/test.yml -t demoNew -r 'xxID=>abcd, 2019-01-01=>${{today()}}, host=>example.com'`
+
+上述命令会自动遍历指定的test_suite及其下的test_cases、test_steps中的所有yml文件，
+
+并对其中的`config.variables`、`request`、`request.headers`、`request.cookies`内容进行匹配，
+
+'=>'符号前的内容会先于上述用例块中的key进行绝对匹配，若未命中的话会再绝对匹配value，匹配到的，会将value替换为'=>'符号后的内容
+
+**如果某条替换规则仅需要对特定的接口生效，可以这么做：**
+
+`parrot replace -s demo/test_suites/test.yml -t demoNew -r 'xxID=>abcd, apiA::2019-01-01=>${{today()}}'`
+
+上述的`2019-01-01=>${{today()}}`规则仅会作用于文件名模糊匹配`apiA`的yml
+
+***
+
+#### 1.3.5 回放，执行用例，验证结果，生成报告
+
+根据#1.2.3节的说明，我们大致了解了`playback - 回放`命令的基本用法，现在我们尝试回放一下前面录制的`demo2`
 
 **# 最简单的回放操作: -s & -t**
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2
+$ parrot playback -s demo2/test_suites -t demo2
 ```
 顺利的话，执行过程中屏幕可见过程输出信息，执行完成后，你会在demo2目录下见到生成的测试报告：`parrot_<timestamp>.html`，可通过PyCharm或浏览器打开查看详情。
 
@@ -333,7 +427,7 @@ parrot的执行间隔：优先传参`interval`，默认step的`time.start`
 若回放传参指定了`interval`，则按照该间隔执行（单位为毫秒），例如：
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2 -i 100
+$ parrot playback -s demo2/test_suites -t demo2 -i 100
 ```
 
 否则，若step的request中定义了`time.start`(录制阶段会自动记录)，则默认按照各个step的`time.start`的间隔执行
@@ -355,7 +449,7 @@ parrot在进行请求回放的过程中，可以实时的拿到`actual result(�
 
 ***
 
-#### 1.3.4 适配多套环境的场景
+#### 1.3.6 适配多套环境的场景
 
 Parrot借鉴了Postman的环境管理机制
 
@@ -401,13 +495,13 @@ test:
 
 ##### 回放时可以进行多套环境的切换
 
-在1.2.3章节有讲到，`parrot replay`命令提供了`-env, --environment`参数，可以在执行时指定所选的环境标识，如：
+在1.2.3章节有讲到，`parrot playback`命令提供了`-env, --environment`参数，可以在执行时指定所选的环境标识，如：
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2 -env development
+$ parrot playback -s demo2/test_suites -t demo2 -env development
 ```
 
-目前，在test\_suites/test\_cases/test\_steps的config中均包含环境引用，同时`replay`传参也可以指定，他们的加载优先级是：
+目前，在test\_suites/test\_cases/test\_steps的config中均包含环境引用，同时`playback`传参也可以指定，他们的加载优先级是：
 
 **parameter > test\_suite.config > test\_case.config > test\_step.config**
 
@@ -694,6 +788,16 @@ validations:
 		    content.datalist: 3
 		```
 	- 类似的方法：`len_neq`, `len_lt`, `len_gt`
+- **time_le(time spent less than or equals): 耗时小于等于**
+	- 释义：`request 'time.spent' time_le 200 (单位：毫秒)`
+	- 用法：
+		
+		```
+		validations:
+		- time_le:
+		    time.spent: 200
+		```
+	- 类似的方法：`time_lt`, `time_gt`, `time_ge`
 - **contains: 包含**
 	- 释义：`'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}`
 	- 用法：
@@ -757,7 +861,7 @@ print(json.dumps(Validator.UNIFORM_COMPARATOR, indent=4))
 
 这些方法可被以`${{function(params)}}`的格式应用于test_step / test_case / test_suite的内部，如：`setup_hooks` `teardown_hooks` `variables`
 
-```python
+```
 today(form='%Y-%m-%d'): 获取今天的日期
 
 days_ago(days=0, form='%Y-%m-%d'): 获取几天前的日期
@@ -812,7 +916,7 @@ Parrot用例结构中的environment参考了该机制
 一个项目可以配置多套环境，用来保存一些通用的环境变量，
 不同环境之间，变量名保持一致，变量值可有差异，
 在用例中通过${variable}的方式引用变量即可，减少手工修改
-运行环境的切换，可以在replay阶段通过-env/--environment参数指定即可
+运行环境的切换，可以在playback阶段通过-env/--environment参数指定即可
 ```
 
 #### 5.1.2 用例分层模式

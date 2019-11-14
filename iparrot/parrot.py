@@ -14,10 +14,12 @@ Usage: parrot [-h] [-v] [command] [<args>]
 command:
   record - parse source file and generate test cases
       see detail usage: `parrot help record`
-  replay - run the recorded test cases and do validations
-      see detail usage: `parrot help replay`
-  template - generate test case template file
+  playback - run standardized test cases and do validations
+      see detail usage: `parrot help playback`
+  template - generate standardized test case template file
       see detail usage: `parrot help template`
+  replace - replace existing test cases with specified rules
+      see detail usage: `parrot help replace`
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -26,6 +28,8 @@ optional arguments:
 
 template_usage = """{}
 Version: {}
+
+Template - generate standardlized test case template file
 
 Usage: parrot template [<args>]
 
@@ -40,6 +44,8 @@ Arguments:
 
 record_usage = """{}
 Version: {}
+
+Record - parse source file and generate test cases
 
 Usage: parrot record [<args>]
 
@@ -60,10 +66,32 @@ Arguments:
   --log-name  LOG_NAME  log name : parrot.log as default
 """.format(__description__, __version__)
 
-replay_usage = """{}
+replace_usage = """{}
 Version: {}
 
-Usage: parrot replay [<args>]
+Replace - replace existing test cases with specified rules
+
+Usage: parrot replace [<args>]
+
+Arguments:
+  -s, --suite, -c, --case SUITE_OR_CASE
+                        test suite or case with path, *.yml or directory [required]
+  -t, --target TARGET   target output path, 'ParrotProjectNew' as default
+  -r, --rule RULE       replace rules, separated by ',' if multiple [required]
+                        'key=>value', 'value1=>value2' or 'apiA::key=>value' only for specified api
+
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
+""".format(__description__, __version__)
+
+playback_usage = """{}
+Version: {}
+
+Playback - run standardized test cases and do validations
+
+Usage: parrot playback [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
@@ -113,9 +141,11 @@ def main_help():
         if action in ('record', 'listen'):
             print(record_usage)
         elif action in ('replay', 'playback', 'run', 'talk'):
-            print(replay_usage)
+            print(playback_usage)
         elif action in ('template', 'tpl'):
             print(template_usage)
+        elif action in ('replace', 'config', 'update'):
+            print(replace_usage)
         else:
             print(usage)
         opt.exit()
@@ -205,7 +235,46 @@ def main_record():
     )
 
 
-def main_replay():
+def main_replace():
+    from iparrot.parser import CaseParser
+    from iparrot.modules.logger import logger, set_logger
+
+    opt = ArgumentParser(usage=usage)
+    opt.add_argument('-s', '-S', '--suite', '-c', '-C', '--case', dest="suite_or_case", action="store", default=None,
+                     help="test suite or case with path, *.yml or directory")
+    opt.add_argument('-t', '-T', '--target', '-o', '-O', '--output', dest="target", action="store", default='ParrotProjectNew',
+                     help="target output path, 'ParrotProjectNew' as default")
+    opt.add_argument('-r', '-R', '--rule', '--rules', dest="rules", action="store", default=None,
+                     help="replace rules, key=>value or value1=>value2 or apiA::key=>value, separated by ',' if multiple")
+
+    opt.add_argument('--log-level', dest="log_level", action="store", default="info",
+                     help="log level: debug, info, warn, error, info as default")
+    opt.add_argument('--log-mode', dest="log_mode", action="store", default=1,
+                     help="log mode: 1-on screen, 2-in log file, 3-1&2, 1 as default")
+    opt.add_argument('--log-path', dest="log_path", action="store", default=None,
+                     help="log path: <project path> as default")
+    opt.add_argument('--log-name', dest="log_name", action="store", default="parrot.log",
+                     help="log name: parrot.log as default")
+    args = opt.parse_args()
+    if not args.suite_or_case or not args.rules:
+        print(replace_usage)
+        opt.exit()
+        
+    set_logger(
+        mode=int(args.log_mode),
+        level=args.log_level,
+        path=args.log_path if args.log_path else args.target,
+        name=args.log_name
+    )
+    parser = CaseParser()
+    parser.case_replace(
+        suite_or_case=args.suite_or_case,
+        target=args.target,
+        rules=args.rules.split(',')
+    )
+
+
+def main_playback():
     from iparrot.player import Player
     from iparrot.modules.logger import logger, set_logger
 
@@ -238,7 +307,7 @@ def main_replay():
                      help="log name: parrot.log as default")
     args = opt.parse_args()
     if not args.suite_or_case:
-        print(replay_usage)
+        print(playback_usage)
         opt.exit()
 
     set_logger(
@@ -275,10 +344,13 @@ def main():
         main_record()
     elif sys.argv[1].lower() in ('replay', '--replay', 'playback', '--playback', 'run', '--run', 'talk', '--talk'):
         del sys.argv[1]
-        main_replay()
+        main_playback()
     elif sys.argv[1].lower() in ('template', '--template', 'tpl', '--tpl'):
         del sys.argv[1]
         main_template()
+    elif sys.argv[1].lower() in ('replace', '--replace', 'config', '--config', 'update', '--update'):
+        del sys.argv[1]
+        main_replace()
     else:
         sys.argv[1] = 'help'
         main_help()

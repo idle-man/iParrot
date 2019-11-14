@@ -169,6 +169,7 @@ class Player(object):
                         _step['_report_']['request'] = response['request']
                         _step['_report_']['response'] = response['response']
                         _step['_report_']['time'] = response['time']
+                        response['response']['time'] = response['time']
 
                         # extract specified variables
                         if 'extract' in _step['response'] and _step['response']['extract']:
@@ -250,14 +251,15 @@ class Player(object):
         self.generate_report(output=output)
 
     def run_one_request(self, request):
+        request = self.__get_variables(request)
         logger.debug("Run request: {}".format(json.dumps(request, ensure_ascii=False)))
         ret = self.session.request(
-            url=self.__get_variables("{}://{}{}".format(request['protocol'], request['host'], request['url'])),
+            url="{}://{}{}".format(request['protocol'], request['host'], request['url']),
             method=request['method'],
-            params=self.__get_variables(request['params']),
-            data=self.__get_variables(request['data']),
-            headers=self.__get_variables(request['headers']),
-            cookies=self.__get_variables(request['cookies'])
+            params=request['params'],
+            data=request['data'],
+            headers=request['headers'],
+            cookies=request['cookies']
         )
         logger.debug("Get response: {}".format(json.dumps(ret, ensure_ascii=False)))
         return ret
