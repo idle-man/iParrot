@@ -236,7 +236,7 @@ class CaseParser(object):
                 continue
             self.__parse_test_step(
                 the_dict=the_dict['test_steps'][_idx],
-                base_path=base_path)
+                base_path=get_file_path(_step))
         logger.debug(" - test case: {}".format(json.dumps(the_dict, ensure_ascii=False)))
 
     def __parse_test_suite(self, the_dict, base_path):
@@ -254,7 +254,7 @@ class CaseParser(object):
                 continue
             self.__parse_test_case(
                 the_dict=the_dict['test_cases'][_idx],
-                base_path=base_path)
+                base_path=get_file_path(_case))
 
     def __parse_environments(self, the_dict, base_path):
         if 'import' in the_dict['config'] and the_dict['config']['import']:
@@ -736,6 +736,7 @@ class CaseParser(object):
                         step_dict['config']['variables']["{}.{}".format(i_name, _k)] = '${' + self.variables[_v]['key'] + '}'
                     else:
                         step_dict['config']['variables']["{}".format(_k)] = '${' + self.variables[_v]['key'] + '}'
+                    self.variables[format(_v)]['flag'] = 1
                 else:
                     if i_name:
                         step_dict['config']['variables']["{}.{}".format(i_name, _k)] = _v
@@ -753,7 +754,7 @@ class CaseParser(object):
             if auto_extract and format(_value) in self.variables.keys():
                 if i_name:
                     step_dict['config']['variables'][i_name] = '${' + self.variables[_value]['key'] + '}'
-                self.variables[_value]['flag'] = 1
+                    self.variables[_value]['flag'] = 1
             else:
                 if i_name:
                     step_dict['config']['variables'][i_name] = _value
@@ -781,12 +782,12 @@ class CaseParser(object):
             if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                 if _v not in self.variables.keys():
                     self.variables[_v] = {
-                        'key': "headers.{}".format(_k),
+                        'key': _k,
                         'flag': 0
                     }
-                step_dict['response']['extract'][_v] = "headers.{}".format(_k)
+                    step_dict['response']['extract'][_v] = _k
             if _k in _vin and _k not in _vex:
-                step_dict['validations'].append({"eq": {"headers.{}".format(_k): _v}})
+                step_dict['validations'].append({"eq": {_k: _v}})
 
         logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
@@ -830,7 +831,7 @@ class CaseParser(object):
                                 'key': _k,
                                 'flag': 0
                             }
-                        step_dict['response']['extract'][_v] = _k
+                            step_dict['response']['extract'][_v] = _k
                     if _k in _vin and _k not in _vex:
                         step_dict['validations'].append({"eq": {_k: _v}})
 
@@ -877,18 +878,18 @@ class CaseParser(object):
             if _item['name'].lower() in the_needed or _item['name'].lower() not in PUBLIC_HEADERS:
                 if auto_extract and format(_item['value']) in self.variables.keys():
                     self.variables[_item['value']]['flag'] = 1
-                    the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                    the_dict["headers.{}".format(_item['name'])] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
                 else:
-                    the_dict[_item['name']] = _item['value']
+                    the_dict["headers.{}".format(_item['name'])] = _item['value']
 
     def __har_cookies(self, cookies, the_dict, auto_extract=False):
         # requests module only supports name and value, not expires / httpOnly / secure
         for _item in cookies:
             if auto_extract and format(_item['value']) in self.variables.keys():
                 self.variables[_item['value']]['flag'] = 1
-                the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                the_dict["cookies.{}".format(_item['name'])] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
             else:
-                the_dict[_item['name']] = _item['value']
+                the_dict["cookies.{}".format(_item['name'])] = _item['value']
 
     # check if the url matches include option
     @staticmethod
