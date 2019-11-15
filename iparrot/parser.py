@@ -823,7 +823,7 @@ class CaseParser(object):
                 _vex = get_matched_keys(key=exclude, keys=list(_pairs.keys()), fuzzy=1) if exclude else []
                 for _k, _v in _pairs.items():
                     if isinstance(_v, str):
-                        _v = "__break_line__".join(_v.split("\n"))
+                        _v = _v.replace("\r\n", '__break_line__').replace("\n", '__break_line__')
                     # Extracting temporary variables for automatic identification of interface dependencies
                     if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                         if _v not in self.variables.keys():

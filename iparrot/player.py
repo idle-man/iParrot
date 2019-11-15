@@ -363,7 +363,7 @@ class Player(object):
         response = {}
         for _k, _v in _response.items():
             if isinstance(_v, str):
-                _v = "__break_line__".join(_v.split("\n"))
+                _v = _v.replace("\r\n", '__break_line__').replace("\n", '__break_line__')
             response[_k] = _v
         if _content:
             response['content'] = _content
