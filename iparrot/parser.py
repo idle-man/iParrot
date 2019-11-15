@@ -775,9 +775,11 @@ class CaseParser(object):
         # get headers
         step_dict['response']['headers'] = {}
         self.__har_headers(_rsp.get('headers'), step_dict['response']['headers'], VALIDATE_HEADERS)
-        _vin = get_matched_keys(key=include, keys=list(step_dict['response']['headers'].keys()), fuzzy=1)
-        _vex = get_matched_keys(key=exclude, keys=list(step_dict['response']['headers'].keys()), fuzzy=1) if exclude else []
+        __headers = get_all_kv_pairs(item=step_dict['response']['headers'], prefix='headers')
+        _vin = get_matched_keys(key=include, keys=list(__headers.keys()), fuzzy=1)
+        _vex = get_matched_keys(key=exclude, keys=list(__headers.keys()), fuzzy=1) if exclude else []
         for _k, _v in step_dict['response']['headers'].items():
+            _k = "headers.{}".format(_k)
             # Extracting temporary variables for automatic identification of interface dependencies
             if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                 if _v not in self.variables.keys():
@@ -786,6 +788,7 @@ class CaseParser(object):
                         'flag': 0
                     }
                     step_dict['response']['extract'][_v] = _k
+
             if _k in _vin and _k not in _vex:
                 step_dict['validations'].append({"eq": {_k: _v}})
 
@@ -823,6 +826,7 @@ class CaseParser(object):
                 _vex = get_matched_keys(key=exclude, keys=list(_pairs.keys()), fuzzy=1) if exclude else []
                 for _k, _v in _pairs.items():
                     if isinstance(_v, str):
+                        # _v = "__break_line__".join(_v.split("\n"))
                         _v = _v.replace("\r\n", '__break_line__').replace("\n", '__break_line__')
                     # Extracting temporary variables for automatic identification of interface dependencies
                     if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
@@ -878,9 +882,9 @@ class CaseParser(object):
             if _item['name'].lower() in the_needed or _item['name'].lower() not in PUBLIC_HEADERS:
                 if auto_extract and format(_item['value']) in self.variables.keys():
                     self.variables[_item['value']]['flag'] = 1
-                    the_dict["headers.{}".format(_item['name'])] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                    the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
                 else:
-                    the_dict["headers.{}".format(_item['name'])] = _item['value']
+                    the_dict[_item['name']] = _item['value']
 
     def __har_cookies(self, cookies, the_dict, auto_extract=False):
         # requests module only supports name and value, not expires / httpOnly / secure
