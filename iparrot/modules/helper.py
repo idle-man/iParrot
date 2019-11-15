@@ -298,6 +298,71 @@ def get_matched_keys(key, keys, fuzzy=1):
     return descendant_keys
 
 
+def diff_two_dict(first, second, select=None, ignore=None):
+    """
+    :param first: Benchmark dict
+    :param second: Contrast dict
+    :param select: select config, matched nodes would be diffed
+    :param ignore: ignore config, matched nodes would be ignored
+    :return: diff list
+    """
+    dict1 = get_all_kv_pairs(item=first)
+    dict2 = get_all_kv_pairs(item=second)
+
+    diff_ret = {}
+    add_keys = []
+    change_keys = []
+    remove_keys = []
+    right_keys = []
+
+    select_keys = ignore_keys = []
+    if select:
+        select_keys = get_matched_keys(key=select, keys=list(dict2.keys()))
+    if ignore:
+        ignore_keys = get_matched_keys(key=ignore, keys=list(dict2.keys()))
+
+    # Traverse the contrast dict first
+    for key2, val2 in dict2.items():
+        if select and key2 not in select_keys:
+            right_keys.append(key2)
+            continue
+        if ignore and key2 in ignore_keys:
+            right_keys.append(key2)
+            continue
+
+        if key2 not in dict1:  # added
+            diff_ret[key2] = ('add', key2, (val2,))
+            add_keys.append(key2)
+        # diff text
+        elif dict1[key2] != val2:  # changed
+            diff_ret[key2] = ('change', key2, (dict1[key2], val2))
+            change_keys.append(key2)
+        else:  # no difference
+            right_keys.append(key2)
+
+    if select:
+        select_keys = get_matched_keys(key=select, keys=list(dict1.keys()))
+    if ignore:
+        ignore_keys = get_matched_keys(key=ignore, keys=list(dict1.keys()))
+
+    # Traverse the benchmark dict
+    for key1, val1 in dict1.items():
+        if key1 not in dict2:  # removed
+            if select and key1 not in select_keys:
+                right_keys.append(key1)
+                continue
+            if ignore and key1 in ignore_keys:
+                right_keys.append(key1)
+                continue
+
+            diff_ret[key1] = ('remove', key1, (val1,))
+            remove_keys.append(key1)
+        else:  # already diffed
+            pass
+
+    return list(diff_ret.values())
+
+
 # parameters to dict, e.g. date=0305&tag=abcd&id=123 => {'date': '0305', 'tag': 'abcd', 'id': 123}
 def param2dict(item):
     my_dict = {}

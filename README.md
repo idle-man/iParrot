@@ -29,7 +29,7 @@ After the installation is complete, the `parrot` executable will be generated, t
 
 #### 1.2.1 View commands supported by Parrot: `parrot help`
 
-Two core commands are: **record** and **replay**
+Two core commands are: **record** and **playback**
 
 ```
 $ parrot help
@@ -41,8 +41,13 @@ Usage: parrot [-h] [-v] [command] [<args>]
 command:
   record - parse source file and generate test cases
       see detail usage: `parrot help record`
-  replay - run the recorded test cases and do validations
-      see detail usage: `parrot help replay`
+  playback - run standardized test cases and do validations
+      see detail usage: `parrot help playback`
+  template - generate standardized test case template file
+      see detail usage: `parrot help template`
+  replace - replace existing test cases with specified rules
+      see detail usage: `parrot help replace`
+
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -77,15 +82,15 @@ Arguments:
 
 ```
 
-#### 1.2.3 View usage of `replay`: `parrot help replay`
+#### 1.2.3 View usage of `playback`: `parrot help playback`
 
 This step is to execute the specified set of test cases and generate a test report.
 
 ```
-$ parrot help replay
+$ parrot help playback
 ...
 
-Usage: parrot replay [<args>]
+Usage: parrot playback [<args>]
 
 Arguments:
   -s, --suite, -c, --case SUITE_OR_CASE
@@ -104,6 +109,50 @@ Arguments:
   --fail-retry-interval FAIL_RETRY_INTERVAL 
                         retry interval(ms) when a test step failed on validation, 100 as default
                         
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
+
+```
+
+#### 1.2.4 View usage of `template`: `parrot help template`
+
+This step is to automatically generate standardized test case templates and examples, which is convenient for users to refer to self-built use cases.
+
+```
+$ parrot help template
+...
+
+Usage: parrot template [<args>]
+
+Arguments:
+  -t, --target TARGET   target output path, 'ParrotProject' as default
+
+  --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
+  --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
+  --log-path  LOG_PATH  log path : <project path> as default
+  --log-name  LOG_NAME  log name : parrot.log as default
+
+```
+
+#### 1.2.5 View usage of `replace`: `parrot help replace`
+
+This step is to batch replace the `config.variables` of the generated use cases according to your specified rules.
+
+```
+$ parrot help replace
+...
+
+Usage: parrot replace [<args>]
+
+Arguments:
+  -s, --suite, -c, --case SUITE_OR_CASE
+                        test suite or case with path, *.yml or directory [required]
+  -t, --target TARGET   target output path, 'ParrotProjectNew' as default
+  -r, --rule RULE       replace rules, separated by ',' if multiple [required]
+                        'key=>value', 'value1=>value2' or 'apiA::key=>value' only for specified api
+
   --log-level LOG_LEVEL log level: debug, info, warn, error, info as default
   --log-mode  LOG_MODE  log mode : 1-on screen, 2-in log file, 3-1&2, 1 as default
   --log-path  LOG_PATH  log path : <project path> as default
@@ -131,7 +180,7 @@ We use this as an example, using the browser's developer tools, after completing
 
 ***
 
-#### 1.3.2 Record, transforming HAR into standardized use cases
+#### 1.3.2 Record - Transforming HAR into standardized use cases
 
 We assume that you have completed the installation of `parrot` as described in Chapter 1. Now we use the command line tool on the computer and switch to the path where `sample.har` is located.
 
@@ -290,14 +339,64 @@ Regarding the recording phase, the above scenarios should cover most of the use 
 
 ***
 
-#### 1.3.3 Replay, execute use cases, verify result, generate report
+#### 1.3.3 Template - Generate a standardized use case template when no files are recorded
 
-According to the instructions in Section #1.2.3, we have a general understanding of the basic usage of the `replay` command. Now let's try to play back the `demo2` recorded earlier.
+In actual work, there may be cases where there is no HAR file, such as a new project or a new interface before going online. 
 
-**# A simple replay: -s & -t**
+For users who have existing HAR files, you can skip this step.
+
+`parrot`1.1.0 and later provides the `template` command to help you generate standardized use case templates, where you can manually edit your test cases.
+
+See section #1.2.4 for specific usage: `parrot help template`
+
+The generated use case structure is consistent with the `recording` phase, including a `test_suite`, a `test_case`, a `test_step` and a `environment`.
+
+Users can refer above template to write their own formatting use cases, which can also be used for subsequent `playback`.
+
+***
+
+#### 1.3.4 Replace - Batch update generated use cases according to specified rules
+
+For use cases that have already been generated, we sometimes have a large number of update requirements, such as:
+- Need to replace the ID in the argument with another one
+- Need to replace a date parameter with a `${{today()}}` function call
+- Need to replace the host in the request with a new test address
+- Need to replace the token in the request header with the `${variable}` variable reference
+
+Some of the above updates can be done with the help of an IDE.
+
+For the user's convenient use, `parrot`1.1.0 and later versions provide the `replace` command, which can be used to batch update the target use case set according to the rules specified by the user.
+
+See section #1.2.5 for specific usage: `parrot help replace`
+
+For example:
+
+`parrot replace -s demo/test_suites/test.yml -t demoNew -r 'xxID=>abcd, 2019-01-01=>${{today()}}, host=>example.com'`
+
+The above command will automatically traverse all the yml files in the specified test_suite and its included test_cases and test_steps,
+
+and match the contents of `config.variables`, `request`, `request.headers`, `request.cookies` blocks.
+
+The content before the '=>' symbol will be absolutely matched with the keys in the above use case block, and if it is missed, it will definitely match the values. 
+
+If some key or value matches, the value will be replaced with the content after the '=>' symbol.
+
+**If a replacement rule only needs to be valid for a particular interface, you can do this:**
+
+`parrot replace -s demo/test_suites/test.yml -t demoNew -r 'xxID=>abcd, apiA::2019-01-01=>${{today()}}'`
+
+The above `2019-01-01=>${{today()}}` rule only works on the yml of the file name fuzzy matched `apiA`.
+
+***
+
+#### 1.3.5 Replay - Execute use cases, verify result, generate report
+
+According to the instructions in Section #1.2.3, we have a general understanding of the basic usage of the `playback` command. Now let's try to play back the `demo2` recorded earlier.
+
+**# A simple playback: -s & -t**
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2
+$ parrot playback -s demo2/test_suites -t demo2
 ```
 
 If it is successful, the process output information will be visible on the screen during the execution. After the execution is completed, you will see the generated test report in the `demo2` directory: `parrot_<timestamp>.html`, which could be  viewed via PyCharm or browser.
@@ -339,7 +438,7 @@ The value of `interval` argument is firstly used, otherwise the value `time.star
 If the playback pass parameter specifies the `interval`, it will execute according to the interval (in milliseconds), for example:
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2 -i 100
+$ parrot playback -s demo2/test_suites -t demo2 -i 100
 ```
 
 Otherwise, if `time.start` is defined in the request of step (the recording phase will be automatically recorded), the default is to execute according to the interval of `time.start` of each step.
@@ -360,7 +459,7 @@ After a single step fails, the current Parrot does not terminate the execution o
 
 ***
 
-#### 1.3.4 Adapting multiple sets of environments
+#### 1.3.6 Adapting multiple sets of environments
 
 Parrot draws on Postman's environmental management mechanism.
 
@@ -406,13 +505,13 @@ Then, manually replace all the values ​​of the `host` in all generated test_
 
 ##### Multiple sets of environment switching during playback
 
-As mentioned in Section 1.2.3, the `parrot replay` command provides the `-env, --environment` parameter, which specifies the selected environment identifier at execution time.
+As mentioned in Section 1.2.3, the `parrot playback` command provides the `-env, --environment` parameter, which specifies the selected environment identifier at execution time.
 
 ```
-$ parrot replay -s demo2/test_suites -t demo2 -env development
+$ parrot playback -s demo2/test_suites -t demo2 -env development
 ```
 
-Currently, the environment reference is included in the config of test\_suites/test\_cases/test\_steps, and the `replay` parameter can also be specified. The load priority is:
+Currently, the environment reference is included in the config of test\_suites/test\_cases/test\_steps, and the `playback` parameter can also be specified. The load priority is:
 
 **parameter > test\_suite.config > test\_case.config > test\_step.config**
 
@@ -700,6 +799,16 @@ validations:
 		    content.datalist: 3
 		```
 	- Similar methods: `len_neq`, `len_lt`, `len_gt`
+- **time_le(time spent less than or equals):**
+	- Example: `request 'time.spent' time_le 200 (unit is ms)`
+	- Usage:
+		
+		```
+		validations:
+		- time_le:
+		    time.spent: 200
+		```
+	- Similar methods: `time_lt`, `time_gt`, `time_ge`
 - **contains:**
 	- Example: `'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}`
 	- Usage:
@@ -763,7 +872,7 @@ print(json.dumps(Validator.UNIFORM_COMPARATOR, indent=4))
 
 These methods can be applied to the inside of test_step / test_case / test_suite in the form `${{function(params)}}`, such as: `setup_hooks` `teardown_hooks` `variables`
 
-```python
+```
 today(form='%Y-%m-%d'): Get today's date
 
 days_ago(days=0, form='%Y-%m-%d'): Get the date a few days ago
@@ -822,7 +931,7 @@ Variable names are consistent between different environments, and values ​​c
 
 In the use case, you can refer to the variable by means of ${variable}, reducing manual modification.
 
-The switching of the operating environment can be specified in the replay phase by the -env/--environment parameter.
+The switching of the operating environment can be specified in the playback phase by the -env/--environment parameter.
 ```
 
 #### 5.1.2 Use case layering mode

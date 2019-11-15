@@ -228,14 +228,15 @@ class CaseParser(object):
             if _step.startswith('..'):
                 _step = "{}/{}".format(base_path, _step)
             try:
-                the_dict['test_steps'][_idx] = yaml.full_load(self.__read_file(_step))
+                the_dict['test_steps'][_idx] = copy.deepcopy(self.step_tpl)
+                the_dict['test_steps'][_idx].update(yaml.full_load(self.__read_file(_step)))
                 logger.debug(" - step info: {}".format(json.dumps(the_dict['test_steps'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
                 continue
             self.__parse_test_step(
                 the_dict=the_dict['test_steps'][_idx],
-                base_path=base_path)
+                base_path=get_file_path(_step))
         logger.debug(" - test case: {}".format(json.dumps(the_dict, ensure_ascii=False)))
 
     def __parse_test_suite(self, the_dict, base_path):
@@ -245,14 +246,15 @@ class CaseParser(object):
             if _case.startswith('..'):
                 _case = "{}/{}".format(base_path, _case)
             try:
-                the_dict['test_cases'][_idx] = yaml.full_load(self.__read_file(_case))
+                the_dict['test_cases'][_idx] = copy.deepcopy(self.case_tpl)
+                the_dict['test_cases'][_idx].update(yaml.full_load(self.__read_file(_case)))
                 logger.debug(" - case info: {}".format(json.dumps(the_dict['test_cases'][_idx], ensure_ascii=False)))
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
                 continue
             self.__parse_test_case(
                 the_dict=the_dict['test_cases'][_idx],
-                base_path=base_path)
+                base_path=get_file_path(_case))
 
     def __parse_environments(self, the_dict, base_path):
         if 'import' in the_dict['config'] and the_dict['config']['import']:
@@ -271,6 +273,176 @@ class CaseParser(object):
             except ScannerError as e:
                 logger.warning("Invalid yaml file: {}".format(e))
         logger.debug(" - config variables: {}".format(json.dumps(the_dict['config']['variables'], ensure_ascii=False)))
+
+    def case_replace(self, suite_or_case, rules, target="ParrotProjectNew"):
+        """
+        :param suite_or_case: file or directory of test suites/cases/steps
+        :param rules: replace rule list, key=>value or value1=>value2
+        :param target: target directory for case output
+        :return: suite dict
+        """
+        logger.info("Start to load test suite or case: {}".format(suite_or_case))
+        files = []
+        if isinstance(suite_or_case, (list, tuple, set)):
+            items = suite_or_case
+        else:
+            items = [format(suite_or_case), ]
+        for item in items:
+            if not os.path.exists(item):
+                logger.warning("File {} does not exist, ignore.".format(item))
+                continue
+            if os.path.isdir(item):
+                files.extend(get_dir_files(item))
+            else:
+                files.append(item)
+        total = {}
+        for _file in files:
+            logger.info("Load case from file: {}".format(_file))
+            if not (_file.endswith('yml') or _file.endswith('yaml')):
+                logger.warning("Not a yaml file, ignore: {}".format(_file))
+                continue
+            try:
+                _dict = yaml.full_load(stream=self.__read_file(_file))
+            except ScannerError as e:
+                logger.warning("Invalid yaml file: {}".format(e))
+                continue
+            logger.debug(" - yaml dict: {}".format(json.dumps(_dict, ensure_ascii=False)))
+
+            if 'test_cases' in _dict:  # it's a test suite
+                _tmp_suite = copy.deepcopy(self.suite_tpl)
+                _tmp_suite.update(_dict)
+                self.__match_rule(_yaml=_file, _dict=_tmp_suite, rules=rules)
+                _path = re.findall(r"(.+)test_suites(.+)", get_file_path(_file))
+                if _path:
+                    total["{}/test_suites/{}/{}".format(target, _path[0][1], get_file_name(_file, ext=1))] = _tmp_suite
+                else:
+                    total["{}/test_suites/{}".format(target, get_file_name(_file, ext=1))] = _tmp_suite
+                _cases = []
+                for _case in _tmp_suite['test_cases']:
+                    _cases.append("{}/{}".format(get_file_path(_file), _case))
+                if _tmp_suite['config']['import']:
+                    _cases.append("{}/{}".format(get_file_path(_file), _tmp_suite['config']['import']))
+                if _cases:
+                    self.case_replace(suite_or_case=_cases, target=target, rules=rules)
+            elif 'test_steps' in _dict:  # it's a test case
+                _tmp_case = copy.deepcopy(self.case_tpl)
+                _tmp_case.update(_dict)
+                self.__match_rule(_yaml=_file, _dict=_tmp_case, rules=rules)
+                _path = re.findall(r"(.+)test_cases(.+)", get_file_path(_file))
+                if _path:
+                    total["{}/test_cases/{}/{}".format(target, _path[0][1], get_file_name(_file, ext=1))] = _tmp_case
+                else:
+                    total["{}/test_cases/{}".format(target, get_file_name(_file, ext=1))] = _tmp_case
+                _steps = []
+                for _step in _tmp_case['test_steps']:
+                    _steps.append("{}/{}".format(get_file_path(_file), _step))
+                if _tmp_case['config']['import']:
+                    _steps.append("{}/{}".format(get_file_path(_file), _tmp_case['config']['import']))
+                if _steps:
+                    self.case_replace(suite_or_case=_steps, target=target, rules=rules)
+            elif 'request' in _dict:  # it's a test step
+                _tmp_step = copy.deepcopy(self.step_tpl)
+                _tmp_step.update(_dict)
+                self.__match_rule(_yaml=_file, _dict=_tmp_step, rules=rules)
+                _path = re.findall(r"(.+)test_steps(.+)", get_file_path(_file))
+                if _path:
+                    total["{}/test_steps/{}/{}".format(target, _path[0][1], get_file_name(_file, ext=1))] = _tmp_step
+                else:
+                    total["{}/test_steps/{}".format(target, get_file_name(_file, ext=1))] = _tmp_step
+                if _tmp_step['config']['import']:
+                    self.case_replace(suite_or_case="{}/{}".format(get_file_path(_file), _tmp_step['config']['import']),
+                                      target=target, rules=None)
+            else:  # it's environment file
+                _path = re.findall(r"(.+)environments(.+)", get_file_path(_file))
+                if _path:
+                    total["{}/environments/{}/{}".format(target, _path[0][1], get_file_name(_file, ext=1))] = _dict
+                else:
+                    total["{}/environments/{}".format(target, get_file_name(_file, ext=1))] = _dict
+        for _k, _v in total.items():
+            make_dir(get_file_path(_k))
+            with open(file=format(_k), mode='w', encoding='utf-8') as f:
+                yaml.dump(data=_v, stream=f, encoding='utf-8', allow_unicode=True)
+            logger.info("Write file after replace: {}".format(_k))
+        logger.info("Done. You could get them in {}".format(target))
+
+    def __match_rule(self, _yaml, _dict, rules):
+        _k2v = re.compile(r"(.+)=>(.+)")  # key to value, e.g. host=www.example.com
+        _pre = re.compile(r"(.+)::(.+)")  # only to speicified api, e.g. /path/to/api::variable1=1234
+        logger.info("Do replace actions in {}.".format(_yaml))
+        for rule in rules:
+            _match = re.findall(_pre, rule)
+            if _match:  # only to specified api, fuzzy match with file name
+                if format(_match[0][0]).strip() not in _yaml:
+                    continue
+                _match = re.findall(_k2v, format(_match[0][1]).strip())
+            else:
+                _match = re.findall(_k2v, rule)
+            if _match:
+                logger.info("Math rule: {}".format(rule))
+                _from = format(_match[0][0]).strip()
+                _to = format(_match[0][1]).strip()
+                # config.variables => request => request.headers => request.cookies
+                _dict['config']['variables'] = self.__do_replace(_dict=_dict['config']['variables'], _from=_from, _to=_to)
+                if 'request' in _dict.keys():
+                    _dict['request'] = self.__do_replace(_dict=_dict['request'], _from=_from, _to=_to)
+                    if 'headers' in _dict['request'].keys():
+                        _dict['request']['headers'] = self.__do_replace(_dict=_dict['request']['headers'], _from=_from, _to=_to)
+                    if 'cookies' in _dict['request'].keys():
+                        _dict['request']['cookies'] = self.__do_replace(_dict=_dict['request']['cookies'], _from=_from, _to=_to)
+                if 'validations' in _dict.keys():
+                    for _idx, _validate in enumerate(_dict['validations']):
+                        for _com, _exp in _validate.items():
+                            _dict['validations'][_idx][_com] = self.__do_replace(_dict=_exp, _from=_from, _to=_to)
+
+    @staticmethod
+    def __do_replace(_dict, _from, _to):
+        if _from in _dict.keys():  # match key first
+            logger.info("Replace value of {} from {} to {}.".format(_from, _dict[_from], _to))
+            _dict[_from] = _to  # do replace
+        else:  # otherwise, match value
+            for _k, _v in _dict.items():
+                if _from == format(_v):
+                    logger.info("Replace value of {} from {} to {}.".format(_k, _from, _to))
+                    _dict[_k] = _to  # do replace
+        return _dict
+
+    def auto_template(self, target="ParrotProject"):
+        """
+        :param target: target directory for case output
+        :return: suite dict
+        """
+        suite_dict = copy.deepcopy(self.suite_tpl)
+        case_dict = copy.deepcopy(self.case_tpl)
+        step_dict = copy.deepcopy(self.step_tpl)
+        suite_dict['config']['name'] = case_dict['config']['name'] = 'template'
+        step_dict['config'].update({
+            'name': 'step',
+            'variables': {
+                'variable1': 123
+            }
+        })
+        step_dict['request'] = {
+            'protocol': "http",
+            'method': 'GET',
+            'host': "www.example.com",
+            'url': "/demo",
+            'params': {
+                'param1': 'abc',
+                'param2': '${variable1}',
+                'param3': '${{today()}}'
+            },
+            'cookies': {},
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36',
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            'data': {}
+        }
+
+        case_dict['test_steps'].append(step_dict)
+        suite_dict['test_cases'].append(case_dict)
+        self.__generate_case(suite_dict, target)
+        return suite_dict
 
     # parse source file and generate test cases
     def source_to_case(self, source, target="ParrotProject",
@@ -426,7 +598,7 @@ class CaseParser(object):
                             if _ex_k in self.variables.keys() and self.variables[_ex_k]['flag']:
                                 _step['response']['extract'][_ex_v] = _ex_v
                             del _step['response']['extract'][_ex_k]
-                    else:
+                    elif _k != 'time.spent':
                         del _step['response'][_k]
                 _s_id = "{}{}".format('0'*(4-len(str(_t_sid))), _t_sid)  # step id
                 _s_path = "{}/test_steps/{}".format(target, '/'.join(_step['config']['name'].split('/')[1:-1]))
@@ -435,7 +607,10 @@ class CaseParser(object):
                     '/'.join(_step['config']['name'].split('/')[1:-1]),
                     _s_id,
                     _step['config']['name'].split('/')[-1])
-                _step['config']['import'] = r_d_yaml
+                if len(_step['config']['name'].split('/')) > 1:
+                    _step['config']['import'] = "{}environments/{}_env.yml".format('../'*(len(_step['config']['name'].split('/'))-1), suite['config']['name'])
+                else:
+                    _step['config']['import'] = "../environments/{}_env.yml".format(suite['config']['name'])
                 make_dir(_s_path)
                 with open(file=_s_yaml, mode='w', encoding='utf-8') as f:
                     # use allow_unicode=True to solve Chinese display problem
@@ -522,12 +697,14 @@ class CaseParser(object):
             for _item in _param:
                 self.__har_extract(step_dict, _item['name'], _item['value'], 'params', auto_extract)
         else:
-            step_dict['request']['params'] = _param
+            # step_dict['request']['params'] = _param
+            self.__har_extract(step_dict, '', _param, 'params', auto_extract)
         if isinstance(_data, (list, tuple, set)):
             for _item in _data:
                 self.__har_extract(step_dict, _item['name'], _item['value'], 'data', auto_extract)
         else:
-            step_dict['request']['data'] = _data
+            # step_dict['request']['data'] = _data
+            self.__har_extract(step_dict, '', _data, 'data', auto_extract)
         logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
         # get headers
@@ -555,19 +732,34 @@ class CaseParser(object):
         if isinstance(_value, dict):
             for _k, _v in _value.items():
                 if auto_extract and format(_v) in self.variables.keys():
-                    step_dict['config']['variables']["{}.{}".format(i_name, _k)] = \
-                        '${' + self.variables[_v]['key'] + '}'
+                    if i_name:
+                        step_dict['config']['variables']["{}.{}".format(i_name, _k)] = '${' + self.variables[_v]['key'] + '}'
+                    else:
+                        step_dict['config']['variables']["{}".format(_k)] = '${' + self.variables[_v]['key'] + '}'
+                    self.variables[format(_v)]['flag'] = 1
                 else:
-                    step_dict['config']['variables']["{}.{}".format(i_name, _k)] = _v
-                _value[_k] = '${' + "{}.{}".format(i_name, _k) + '}'
-            step_dict['request'][i_type][i_name] = json.dumps(_value, ensure_ascii=False)
+                    if i_name:
+                        step_dict['config']['variables']["{}.{}".format(i_name, _k)] = _v
+                    else:
+                        step_dict['config']['variables']["{}".format(_k)] = _v
+                if i_name:
+                    _value[_k] = '${' + "{}.{}".format(i_name, _k) + '}'
+                else:
+                    _value[_k] = '${' + "{}".format(_k) + '}'
+            if i_name:
+                step_dict['request'][i_type][i_name] = json.dumps(_value, ensure_ascii=False)
+            else:
+                step_dict['request'][i_type] = json.dumps(_value, ensure_ascii=False)
         else:
             if auto_extract and format(_value) in self.variables.keys():
-                step_dict['config']['variables'][i_name] = '${' + self.variables[_value]['key'] + '}'
-                self.variables[_value]['flag'] = 1
+                if i_name:
+                    step_dict['config']['variables'][i_name] = '${' + self.variables[_value]['key'] + '}'
+                    self.variables[_value]['flag'] = 1
             else:
-                step_dict['config']['variables'][i_name] = _value
-            step_dict['request'][i_type][i_name] = '${' + "{}".format(i_name) + '}'
+                if i_name:
+                    step_dict['config']['variables'][i_name] = _value
+            if i_name:
+                step_dict['request'][i_type][i_name] = '${' + "{}".format(i_name) + '}'
 
     # parse response block and make validations
     def __har_response(self, entry, step_dict, include, exclude, auto_extract=False):
@@ -590,12 +782,12 @@ class CaseParser(object):
             if auto_extract and isinstance(_v, str) and len(_v) >= IDENTIFY_LEN:
                 if _v not in self.variables.keys():
                     self.variables[_v] = {
-                        'key': "headers.{}".format(_k),
+                        'key': _k,
                         'flag': 0
                     }
-                step_dict['response']['extract'][_v] = "headers.{}".format(_k)
+                    step_dict['response']['extract'][_v] = _k
             if _k in _vin and _k not in _vex:
-                step_dict['validations'].append({"eq": {"headers.{}".format(_k): _v}})
+                step_dict['validations'].append({"eq": {_k: _v}})
 
         logger.debug(" - self.variables: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
@@ -639,7 +831,7 @@ class CaseParser(object):
                                 'key': _k,
                                 'flag': 0
                             }
-                        step_dict['response']['extract'][_v] = _k
+                            step_dict['response']['extract'][_v] = _k
                     if _k in _vin and _k not in _vex:
                         step_dict['validations'].append({"eq": {_k: _v}})
 
@@ -686,18 +878,18 @@ class CaseParser(object):
             if _item['name'].lower() in the_needed or _item['name'].lower() not in PUBLIC_HEADERS:
                 if auto_extract and format(_item['value']) in self.variables.keys():
                     self.variables[_item['value']]['flag'] = 1
-                    the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                    the_dict["headers.{}".format(_item['name'])] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
                 else:
-                    the_dict[_item['name']] = _item['value']
+                    the_dict["headers.{}".format(_item['name'])] = _item['value']
 
     def __har_cookies(self, cookies, the_dict, auto_extract=False):
         # requests module only supports name and value, not expires / httpOnly / secure
         for _item in cookies:
             if auto_extract and format(_item['value']) in self.variables.keys():
                 self.variables[_item['value']]['flag'] = 1
-                the_dict[_item['name']] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
+                the_dict["cookies.{}".format(_item['name'])] = '${' + "{}".format(self.variables[_item['value']]['key']) + '}'
             else:
-                the_dict[_item['name']] = _item['value']
+                the_dict["cookies.{}".format(_item['name'])] = _item['value']
 
     # check if the url matches include option
     @staticmethod
@@ -727,6 +919,11 @@ class CaseParser(object):
 if __name__ == '__main__':
     set_logger(mode=1, level='debug')
     cp = CaseParser()
+    cp.auto_template(target='../demo')
+    cp.case_replace(suite_or_case='../demo/test_cases',
+                    target='../demoNew',
+                    rules=['xxxId=>abcedjlsje', 'apiX::ABCD=>HAHAHA', 'date=>${{today}}'])
+    
     case = cp.source_to_case(source='../demo/parrot-demo.har',
                              target='../demo',
                              include=[], exclude=['.js', '.css'],

@@ -26,6 +26,14 @@ class Validator(object):
         "len_gt": {"uniform": "length_greater_than", "sample": "'abc' len_gt 2"},
         "len_le": {"uniform": "length_less_than_or_equals", "sample": "[1, 2] len_le 2"},
         "len_ge": {"uniform": "length_greater_than_or_equals", "sample": "{'a': 1, 'b': 2} len_ge 2"},
+
+        "time_eq": {"uniform": "time_equals", "sample": "request 'time.spent' time_eq 200 (unit is ms)"},
+        "time_neq": {"uniform": "time_not_equals", "sample": "request 'time.spent' time_neq 200"},
+        "time_lt": {"uniform": "time_less_than", "sample": "request 'time.spent' time_lt 200"},
+        "time_gt": {"uniform": "time_greater_than", "sample": "request 'time.spent' time_gt 200"},
+        "time_le": {"uniform": "time_less_than_or_equals", "sample": "request 'time.spent' time_le 200"},
+        "time_ge": {"uniform": "time_greater_than_or_equals", "sample": "request 'time.spent' time_ge 200"},
+
         "contain": {
             "uniform": "contains",
             "sample": "'abc' contain 'ab', ['a', 'b'] contain 'a', {'a': 1, 'b': 2} contain {'a': 1}"
@@ -114,6 +122,28 @@ class Validator(object):
                             "cnt_less_or_equals", "count_less_or_equals"]:
             return ["length_less_than_or_equals",
                     "${{self._length_assert('<=', first=__FIRST__, second=int(__SECOND__))}}"]
+
+        # time.spent assert
+        elif comparator in ["time_eq", "time_equal", "time_equals"]:
+            return ["time_equals",
+                    "${{self._simple_assert('==', first=__FIRST__, second=float(__SECOND__))}}"]
+        elif comparator in ["time_neq", "time_not_equal", "time_not_equals"]:
+            return ["time_not_equals",
+                    "${{self._simple_assert('!=', first=__FIRST__, second=float(__SECOND__))}}"]
+        elif comparator in ["time_lt", "time_less", "time_less_than"]:
+            return ["time_less_than",
+                    "${{self._simple_assert('<', first=__FIRST__, second=float(__SECOND__))}}"]
+        elif comparator in ["time_gt", "time_greater", "time_greater_than"]:
+            return ["time_greater_than",
+                    "${{self._simple_assert('>', first=__FIRST__, second=float(__SECOND__))}}"]
+        elif comparator in ["time_le", "time_less_equal", "time_less_equals",
+                            "time_less_than_or_equal", "time_less_than_or_equals"]:
+            return ["time_less_than_or_equals",
+                    "${{self._simple_assert('<=', first=__FIRST__, second=float(__SECOND__))}}"]
+        elif comparator in ["time_ge", "time_greater_equal", "time_greater_equals",
+                            "time_greater_than_or_equal", "time_greater_than_or_equals"]:
+            return ["time_greater_than_or_equals",
+                    "${{self._simple_assert('>=', first=__FIRST__, second=float(__SECOND__))}}"]
 
         # 'abc' contains 'ab', ['ab', 'bc'] contains 'ab', {'ab': 1, 'ac': 2} contains 'ab'
         elif comparator in ["contain", "contains", "str_contain", "str_contains", "string_contain", "string_contains",
@@ -302,6 +332,7 @@ class Validator(object):
 
 if __name__ == '__main__':
     v = Validator(response={
+        'time.spent': 200,
         'status.code': 200,
         'content.data': {
             'a': 1,
@@ -317,6 +348,7 @@ if __name__ == '__main__':
     assert v.validate(comparator='neq', actual='status.code', expected=500) is True
     assert v.validate(comparator='str_eq', actual='content.number', expected='2') is True
     assert v.validate(comparator='len_eq', actual='content.number', expected=1) is True
+    assert v.validate(comparator='time_le', actual='time.spent', expected='200') is True
     assert v.validate(comparator='is_instance', actual='content.number', expected=['int', 'str']) is True
     assert v.validate(comparator='is_not_instance', actual='content.number', expected=['list', 'dict']) is True
     assert v.validate(comparator='is_json', actual=json.dumps(v.response)) is True
