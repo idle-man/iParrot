@@ -1,12 +1,15 @@
-What's new in iParrot 1.1.0?
+What's new in iParrot 1.1.1?
 ===========================
-Release Date: 2019-11-15
+Release Date: 2019-11-18
 
 Release Feature:
 * add `parrot template` command to generate test cases template and example
 * add `parrot replace` command to batch update test cases according to specified rules
+* add `parrot home` and `parrot doc` commands to show github info
 * add `time.spent` related assertions, e.g. `time_lt`
 * update readme
+
+Version 1.1.0 was deprecated because of a careless bug.
 
 What's new in iParrot 1.0.6?
 ===========================
