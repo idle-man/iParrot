@@ -12,14 +12,16 @@ Version: {}
 Usage: parrot [-h] [-v] [command] [<args>]
 
 command:
-  record - parse source file and generate test cases
-      see detail usage: `parrot help record`
+  record   - parse source file and generate test cases
+            see detail usage: `parrot help record`
   playback - run standardized test cases and do validations
-      see detail usage: `parrot help playback`
+            see detail usage: `parrot help playback`
   template - generate standardized test case template file
-      see detail usage: `parrot help template`
-  replace - replace existing test cases with specified rules
-      see detail usage: `parrot help replace`
+            see detail usage: `parrot help template`
+  replace  - replace existing test cases with specified rules
+            see detail usage: `parrot help replace`
+  home     - show homepage on github
+  doc      - show readme on github
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -351,6 +353,13 @@ def main():
     elif sys.argv[1].lower() in ('replace', '--replace', 'config', '--config', 'update', '--update'):
         del sys.argv[1]
         main_replace()
+    elif sys.argv[1].lower() in ('home', '--home', 'homepage', '--homepage', 'github', '--github'):
+        print("Home page: https://github.com/idle-man/iParrot")
+        exit()
+    elif sys.argv[1].lower() in ('readme', '--readme', 'doc', '--doc', 'document', '--document'):
+        print("Document EN: https://github.com/idle-man/iParrot/blob/master/README.md")
+        print("Document CN: https://github.com/idle-man/iParrot/blob/master/README_CN.md")
+        exit()
     else:
         sys.argv[1] = 'help'
         main_help()
