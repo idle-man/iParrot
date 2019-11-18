@@ -503,7 +503,7 @@ class Report(ReportTemplate):
                     ) + "\n"
                 _case_summary = self.CASE_SUMMARY_TPL % dict(
                     case_id=c_id,
-                    case_name="{} - {}".format(s_name, c_name) if s_name else c_name,
+                    case_name="{} / {}".format(s_name, c_name) if s_name else c_name,
                     step_total=t_total,
                     step_pass=t_pass,
                     step_fail=t_fail,
