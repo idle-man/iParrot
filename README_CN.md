@@ -39,14 +39,17 @@ Version: ...
 Usage: parrot [-h] [-v] [command] [<args>]
 
 command:
-  record - 解析源文件，自动生成标准化测试用例
-      查看详细用法: parrot help record
+  record   - 解析源文件，自动生成标准化测试用例
+            查看详细用法: parrot help record
   playback - 执行标准化测试用例，验证结果，输出报告
-      查看详细用法: parrot help playback
+            查看详细用法: parrot help playback
   template - 自动生成标准化用例模板和示例
-      查看详细用法：parrot help template
-  replace - 根据指定的规则对已生成的用例的config.variables进行批量替换
-      查看详细用法：parrot help replace
+            查看详细用法：parrot help template
+  replace  - 根据指定的规则对已生成的用例的config.variables进行批量替换
+            查看详细用法：parrot help replace
+  home     - 展示GitHub上的项目地址
+  doc      - 展示GitHub上的使用手册
+
 
 optional arguments:
   -h, --help         show this help message and exit
