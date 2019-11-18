@@ -378,17 +378,17 @@ class CaseParser(object):
             else:
                 _match = re.findall(_k2v, rule)
             if _match:
-                logger.info("Math rule: {}".format(rule))
+                logger.debug("To math rule: {}".format(rule))
                 _from = format(_match[0][0]).strip()
                 _to = format(_match[0][1]).strip()
                 # config.variables => request => request.headers => request.cookies
                 _dict['config']['variables'] = self.__do_replace(_dict=_dict['config']['variables'], _from=_from, _to=_to)
                 if 'request' in _dict.keys():
                     _dict['request'] = self.__do_replace(_dict=_dict['request'], _from=_from, _to=_to)
-                    if 'headers' in _dict['request'].keys():
-                        _dict['request']['headers'] = self.__do_replace(_dict=_dict['request']['headers'], _from=_from, _to=_to)
-                    if 'cookies' in _dict['request'].keys():
-                        _dict['request']['cookies'] = self.__do_replace(_dict=_dict['request']['cookies'], _from=_from, _to=_to)
+                    _dict['request']['params'] = self.__do_replace(_dict=_dict['request']['params'], _from=_from, _to=_to)
+                    _dict['request']['data'] = self.__do_replace(_dict=_dict['request']['data'], _from=_from, _to=_to)
+                    _dict['request']['headers'] = self.__do_replace(_dict=_dict['request']['headers'], _from=_from, _to=_to)
+                    _dict['request']['cookies'] = self.__do_replace(_dict=_dict['request']['cookies'], _from=_from, _to=_to)
                 if 'validations' in _dict.keys():
                     for _idx, _validate in enumerate(_dict['validations']):
                         for _com, _exp in _validate.items():
@@ -397,12 +397,12 @@ class CaseParser(object):
     @staticmethod
     def __do_replace(_dict, _from, _to):
         if _from in _dict.keys():  # match key first
-            logger.info("Replace value of {} from {} to {}.".format(_from, _dict[_from], _to))
+            logger.info("Matched. Replace value of {} from {} to {}.".format(_from, _dict[_from], _to))
             _dict[_from] = _to  # do replace
         else:  # otherwise, match value
             for _k, _v in _dict.items():
                 if _from == format(_v):
-                    logger.info("Replace value of {} from {} to {}.".format(_k, _from, _to))
+                    logger.info("Matched. Replace value of {} from {} to {}.".format(_k, _from, _to))
                     _dict[_k] = _to  # do replace
         return _dict
 
