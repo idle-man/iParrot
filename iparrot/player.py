@@ -266,7 +266,7 @@ class Player(object):
 
     def __set_variables(self, variables):
         logger.debug(" - To set variables: {}".format(json.dumps(variables, ensure_ascii=False)))
-        self.variables.update(variables)
+        self.variables.update(self.__get_variables(variables))
         logger.debug(" - Variables after update: {}".format(json.dumps(self.variables, ensure_ascii=False)))
 
     def __extract_variable(self, extract, response):
