@@ -374,7 +374,7 @@ class Player(object):
                 if isinstance(_item, dict):
                     for _key, _val in _item.items():
                         _status = self.validator.validate(
-                            comparator=_com, actual=self.__get_variables(_key), expected=_val)
+                            comparator=_com, actual=self.__get_variables(_key), expected=self.__get_variables(_val))
                         result['detail'].append({
                             'check': _key,
                             'comparator': _com,
@@ -389,7 +389,7 @@ class Player(object):
                         if isinstance(__item, dict):
                             for _key, _val in __item.items():
                                 _status = self.validator.validate(
-                                    comparator=_com, actual=self.__get_variables(_key), expected=_val)
+                                    comparator=_com, actual=self.__get_variables(_key), expected=self.__get_variables(_val))
                                 result['detail'].append({
                                     'check': _key,
                                     'comparator': _com,
