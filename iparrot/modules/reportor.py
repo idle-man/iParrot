@@ -468,10 +468,14 @@ class Report(ReportTemplate):
                         headers=t_request['headers'],
                         cookies=t_request['cookies']
                     )
+                    if format(t_response['content']).startswith('<!DOCTYPE html>'):
+                        _content = "<textarea style=\"width: 400px;\">{}</textarea>".format(t_response['content'])
+                    else:
+                        _content = t_response['content']
                     _response = self.STEP_DETAIL_RESPONSE_TPL % dict(
                         status=t_response['status.code'],
                         duration=_step['_report_']['time']['spent'],
-                        content=t_response['content'],
+                        content=_content,
                         headers=t_response['headers'],
                         cookies=t_response['cookies']
                     )
