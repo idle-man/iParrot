@@ -367,7 +367,7 @@ class CaseParser(object):
 
     def __match_rule(self, _yaml, _dict, rules):
         _k2v = re.compile(r"(.+)=>(.+)")  # key to value, e.g. host=www.example.com
-        _pre = re.compile(r"(.+)::(.+)")  # only to speicified api, e.g. /path/to/api::variable1=1234
+        _pre = re.compile(r"(.+)::(.+)")  # only to specified api, e.g. /path/to/api::variable1=1234
         logger.info("Do replace actions in {}.".format(_yaml))
         for rule in rules:
             _match = re.findall(_pre, rule)
@@ -801,7 +801,7 @@ class CaseParser(object):
         # get content
         try:
             _text = _rsp.get('content').get('text', '')
-            _mime = _rsp.get('content').get('mimeType')
+            _mime = _rsp.get('content').get('mimeType') or ''
             _code = _rsp.get('content').get('encoding')
         except AttributeError:
             logger.warning(" * Invalid response content: {}".format(_rsp.get('content')))
