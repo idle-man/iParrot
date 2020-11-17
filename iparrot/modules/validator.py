@@ -244,8 +244,15 @@ class Validator(object):
                 expression = expression.replace('__SECOND__', "'{}'".format(format(expected).replace("\'", "\\\'")))
         try:
             return eval(expression)
-        except NameError or TypeError or SyntaxError or Exception as e:
+        except NameError as e:
             logger.warning("Run {} - {} failed: {}".format(comparator, expression, e))
+        except TypeError as e:
+            logger.warning("Run {} - {} failed: {}".format(comparator, expression, e))
+        except SyntaxError as e:
+            logger.warning("Run {} - {} failed: {}".format(comparator, expression, e))
+        except Exception as e:
+            logger.warning("Run {} - {} failed: {}".format(comparator, expression, e))
+
             return False
 
     @staticmethod

@@ -344,7 +344,10 @@ class Player(object):
                 _pair = list(_pair)
                 try:
                     _pair[1] = eval(_pair[1])
-                except SyntaxError or Exception as e:
+                except SyntaxError as e:
+                    logger.warning("Invalid function: {}: {}, set to ''".format(_pair[0], e))
+                    _pair[1] = ''
+                except Exception as e:
                     logger.warning("Invalid function: {}: {}, set to ''".format(_pair[0], e))
                     _pair[1] = ''
                 if variable == _pair[0]:
@@ -358,7 +361,10 @@ class Player(object):
         _content = None
         if 'Content-Type' in response['headers'] and response['headers']['Content-Type'].startswith('application/json'):
             _content = response['content'].replace("\n", "")
-            response['content'] = json.loads(response['content'])
+            try:
+                response['content'] = json.loads(response['content'])
+            except json.decoder.JSONDecodeError:
+                pass
         _response = get_all_kv_pairs(item=response, mode=0)
         response = {}
         for _k, _v in _response.items():
@@ -444,7 +450,7 @@ class Player(object):
             else:  # exec code or print message
                 try:
                     eval(_action)
-                except SyntaxError or Exception:
+                except SyntaxError:
                     print(_action)
                     continue
 
