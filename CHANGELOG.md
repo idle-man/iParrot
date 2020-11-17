@@ -1,3 +1,11 @@
+What's new in iParrot 1.1.2?
+===========================
+Release Date: 2020-11-17
+
+Release Feature:
+* optimize some exception handling
+
+
 What's new in iParrot 1.1.1?
 ===========================
 Release Date: 2019-11-18

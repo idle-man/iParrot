@@ -523,7 +523,9 @@ class CaseParser(object):
         content = self.__read_file(source)
         try:
             har_dict = json.loads(content)['log']['entries']
-        except (TypeError or KeyError):
+        except TypeError:
+            logger.error("HAR file content error: {}".format(source))
+        except KeyError:
             logger.error("HAR file content error: {}".format(source))
             return False
 
