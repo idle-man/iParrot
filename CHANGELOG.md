@@ -1,3 +1,11 @@
+What's new in iParrot 1.1.3?
+===========================
+Release Date: 2021-05-07
+
+Release Feature:
+* logger: add encoding when new FileHandler
+
+
 What's new in iParrot 1.1.2?
 ===========================
 Release Date: 2020-11-17
