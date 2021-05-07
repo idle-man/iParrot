@@ -43,7 +43,7 @@ def set_logger(mode=1, path="logs", name='parrot.log', level='info'):
     if mode in (2, 3):
         make_dir(path)
         # define log file handler, backup per week
-        fh = handlers.TimedRotatingFileHandler(filename=log_file, when='W0', backupCount=4)
+        fh = handlers.TimedRotatingFileHandler(filename=log_file, when='W0', backupCount=4, encoding='utf-8')
         fh.setFormatter(fmt)
         logger.addHandler(fh)
 
