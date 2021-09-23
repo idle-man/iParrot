@@ -46,6 +46,7 @@ class HttpRequest(object):
                     url=url,
                     method=method,
                     params=params.encode('utf-8') if isinstance(params, str) else params,
+                    data=data.encode('utf-8') if isinstance(data, str) else data,
                     headers=headers,
                     cookies=cookies,
                     timeout=timeout)
