@@ -1,3 +1,11 @@
+What's new in iParrot 1.1.4?
+===========================
+Release Date: 2021-09-23
+
+Release Feature:
+* request: support data parameter in GET method 
+  
+
 What's new in iParrot 1.1.3?
 ===========================
 Release Date: 2021-05-07
