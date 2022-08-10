@@ -364,7 +364,7 @@ class Player(object):
             try:
                 response['content'] = json.loads(response['content'])
             except json.decoder.JSONDecodeError:
-                pass
+                response['content'] = {}
         _response = get_all_kv_pairs(item=response, mode=0)
         response = {}
         for _k, _v in _response.items():
