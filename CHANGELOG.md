@@ -1,3 +1,11 @@
+What's new in iParrot 1.1.5?
+===========================
+Release Date: 2022-08-10
+
+Release Feature:
+* fix bugs on player and helper 
+
+
 What's new in iParrot 1.1.4?
 ===========================
 Release Date: 2021-09-23
