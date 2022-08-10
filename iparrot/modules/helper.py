@@ -315,7 +315,8 @@ def diff_two_dict(first, second, select=None, ignore=None):
     remove_keys = []
     right_keys = []
 
-    select_keys = ignore_keys = []
+    select_keys = []
+    ignore_keys = []
     if select:
         select_keys = get_matched_keys(key=select, keys=list(dict2.keys()))
     if ignore:
